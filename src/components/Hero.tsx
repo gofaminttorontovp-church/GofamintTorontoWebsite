@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { NAV_LINKS } from "@/lib/site";
 
 /**
  * Scroll-driven hero, ported from the Gofamint Toronto design.
@@ -221,10 +223,11 @@ export default function Hero() {
             <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "#1d1d1f" }}>Gofamint Toronto</span>
           </div>
           <nav style={{ display: "flex", alignItems: "center", gap: 32 }}>
-            <a href="#about" style={navLinkStyle}>About</a>
-            <a href="#visit" style={navLinkStyle}>Visit</a>
-            <a href="#sermons" style={navLinkStyle}>Sermons</a>
-            <a href="#events" style={navLinkStyle}>Events</a>
+            {NAV_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} style={navLinkStyle}>
+                {link.label}
+              </Link>
+            ))}
           </nav>
         </header>
 
