@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import LightShaftBackground from "@/components/LightShaftBackground";
 import { NAV_LINKS } from "@/lib/site";
 
 /**
@@ -206,6 +207,8 @@ export default function Hero() {
   return (
     <div ref={heroRef} id="top" style={{ height: `${SCROLL_LENGTH_VH}vh`, position: "relative", background: "#7EC8EF" }}>
       <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
+        <LightShaftBackground />
+
         {/* the red line, drawn by scroll: enters top-left, loops, dives under the headline */}
         {ready && (
           <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none", overflow: "visible" }}>
