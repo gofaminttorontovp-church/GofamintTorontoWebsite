@@ -219,13 +219,13 @@ export default function Hero() {
         )}
 
         {/* top bar: logo left + nav links */}
-        <header style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", zIndex: 3 }}>
+        <header className="hero-header" style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 3 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Gofamint Toronto logo" style={{ width: 52, height: 52, objectFit: "contain" }} />
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "#1d1d1f" }}>Gofamint Toronto</span>
+            <span className="hero-wordmark" style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "#1d1d1f" }}>Gofamint Toronto</span>
           </div>
-          <nav style={{ display: "flex", alignItems: "center", gap: 32 }}>
+          <nav className="hero-nav" style={{ display: "flex", alignItems: "center" }}>
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} style={navLinkStyle}>
                 {link.label}
