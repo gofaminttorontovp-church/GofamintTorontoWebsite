@@ -14,8 +14,9 @@ import { NAV_LINKS } from "@/lib/site";
  *
  * Act 2 — the typing caret sprouts back into a red line, which is consumed
  * into a white flying dove (frame-by-frame line art in /public/dove-flight).
- * The dove swoops down and across the page with the visitor's scroll and
- * lands in the closing lockup, where it becomes the words "The Word".
+ * The dove swoops down and across the page with the visitor's scroll, then
+ * unwraps into a white line that types out "The Word" at the end of the
+ * closing sentence — the same mechanic that wrote "Toronto", in white.
  */
 
 // A single continuous line drawing of a dove, hand-traced over the reference
@@ -36,15 +37,28 @@ const FLIGHT_FRAME_COUNT = 51;
 const FLAP_PASSES = 2;
 const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(2, "0")}.png`;
 
+// Flight waypoints between the runtime-anchored start (where the dove
+// materialises below "Toronto") and end (where it unwraps into "The Word"),
+// as [x, y] fractions of the viewport. Paste a hand-drawn path here from the
+// path-drawing tool to reshape the flight exactly.
+const FLIGHT_MIDS_NORM: [number, number][] = [
+  [0.44, 0.45],
+  [0.2, 0.39],
+  [0.13, 0.65],
+  [0.3, 0.8],
+];
+
 type PathState = {
   pathEntry: string;
   pathDove: string;
   pathExit: string;
   pathSprout: string;
+  pathUnwrap: string;
   entryLen: number;
   doveLen: number;
   exitLen: number;
   sproutLen: number;
+  unwrapLen: number;
   flightPts: [number, number][];
   doveW: number;
   ready: boolean;
@@ -83,7 +97,7 @@ export default function Hero() {
   const heroRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const trowRef = useRef<HTMLDivElement>(null);
-  const twRef = useRef<HTMLDivElement>(null);
+  const twRef = useRef<HTMLSpanElement>(null);
 
   const [p, setP] = useState(0);
   const [paths, setPaths] = useState<PathState>({
@@ -91,10 +105,12 @@ export default function Hero() {
     pathDove: "M 0 0",
     pathExit: "M 0 0",
     pathSprout: "M 0 0",
+    pathUnwrap: "M 0 0",
     entryLen: 1,
     doveLen: 1,
     exitLen: 1,
     sproutLen: 1,
+    unwrapLen: 1,
     flightPts: [],
     doveW: 0,
     ready: false,
@@ -116,7 +132,7 @@ export default function Hero() {
     const trow = trowRef.current;
     if (!hero) return;
 
-    let cur = { entry: "", dove: "", sprout: "" };
+    let cur = { entry: "", dove: "", sprout: "", unwrap: "" };
 
     const measure = () => {
       if (!sticky || !trow) return;
@@ -177,34 +193,40 @@ export default function Hero() {
       const w2 = tw ? tw.getBoundingClientRect() : null;
       const sx = t.right - s.left; // caret parks at 100% of the "Toronto" row
       const sy = t.top - s.top + t.height * 0.58;
-      const lx = w2 ? w2.left - s.left + w2.width / 2 : 0.5 * W; // "The Word" centre
-      const ly = w2 ? w2.top - s.top + w2.height / 2 : 0.74 * H;
+      const wx = w2 ? w2.left - s.left + 4 : 0.56 * W; // left edge of "The Word"
+      const wy = w2 ? w2.top - s.top + w2.height * 0.58 : 0.7 * H;
       const dsx = sx + 0.02 * W;
       const dsy = sy + 0.06 * H;
       const sproutCmds =
         "M " + n(sx) + " " + n(sy) +
         " C " + n(sx + 0.05 * W) + " " + n(sy + 0.005 * H) + " " + n(sx + 0.075 * W) + " " + n(sy + 0.035 * H) + " " + n(sx + 0.05 * W) + " " + n(sy + 0.055 * H) +
         " C " + n(sx + 0.03 * W) + " " + n(sy + 0.07 * H) + " " + n(dsx - 0.03 * W) + " " + n(dsy - 0.025 * H) + " " + n(dsx) + " " + n(dsy);
-      // Flight path: rise up and left across the open sky, dive down the left
-      // side, then swing back right and flare up into the landing text.
+      // Flight path: runtime-anchored start and end with the drawn waypoints
+      // between. The flight ends hovering just up-left of "The Word".
+      const fex = wx - 0.12 * W;
+      const fey = wy - 0.11 * H;
       const flightPts: [number, number][] = [
         [dsx, dsy],
-        [0.44 * W, sy - 0.1 * H],
-        [0.2 * W, sy - 0.16 * H],
-        [0.13 * W, sy + 0.1 * H],
-        [0.3 * W, Math.min(ly + 0.05 * H, 0.94 * H)],
-        [lx, ly],
+        ...FLIGHT_MIDS_NORM.map(([mx, my]) => [mx * W, my * H] as [number, number]),
+        [fex, fey],
       ];
+      // Unwrap line: the white thread the dove spools out, hooking into the
+      // left edge of "The Word" where the typing caret picks it up.
+      const unwrapCmds =
+        "M " + n(fex) + " " + n(fey) +
+        " C " + n(fex + 0.025 * W) + " " + n(fey + 0.055 * H) + " " + n(wx - 0.09 * W) + " " + n(wy - 0.012 * H) + " " + n(wx) + " " + n(wy);
       const doveW = 0.3 * Math.min(W, H);
 
-      // four INDEPENDENT sub-paths so coloring never depends on draw order:
-      // entry (red) → dove (white) → exit (red), then the Act 2 sprout (red).
+      // five INDEPENDENT sub-paths so coloring never depends on draw order:
+      // entry (red) → dove (white) → exit (red), then the Act 2 sprout (red)
+      // and unwrap (white).
       const pathEntry = entryCmds;
       const pathDove = "M " + n(startX) + " " + n(startY) + doveCmds;
       const pathExit = "M " + n(endX) + " " + n(endY) + exitCmds;
       const pathSprout = sproutCmds;
-      if (pathEntry === cur.entry && pathDove === cur.dove && pathSprout === cur.sprout) return;
-      cur = { entry: pathEntry, dove: pathDove, sprout: pathSprout };
+      const pathUnwrap = unwrapCmds;
+      if (pathEntry === cur.entry && pathDove === cur.dove && pathSprout === cur.sprout && pathUnwrap === cur.unwrap) return;
+      cur = { entry: pathEntry, dove: pathDove, sprout: pathSprout, unwrap: pathUnwrap };
 
       const measureLen = (str: string) => {
         try {
@@ -219,7 +241,8 @@ export default function Hero() {
       const doveLen = measureLen(pathDove) || 1;
       const exitLen = measureLen(pathExit) || 1;
       const sproutLen = measureLen(pathSprout) || 1;
-      setPaths((prev) => ({ ...prev, pathEntry, pathDove, pathExit, pathSprout, entryLen, doveLen, exitLen, sproutLen, flightPts, doveW }));
+      const unwrapLen = measureLen(pathUnwrap) || 1;
+      setPaths((prev) => ({ ...prev, pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, doveW }));
     };
 
     const update = () => {
@@ -258,7 +281,7 @@ export default function Hero() {
   }, []);
 
   // ---- derived render values (was renderVals) ----
-  const { pathEntry, pathDove, pathExit, pathSprout, entryLen, doveLen, exitLen, sproutLen, flightPts, doveW, ready } = paths;
+  const { pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, doveW, ready } = paths;
 
   // Scroll progress in vh units, so phases read as absolute scroll distances.
   const S = p * SCROLL_VH;
@@ -268,11 +291,13 @@ export default function Hero() {
   const pA = clamp01(S / 110);
   const pB = clamp01((S - 120) / 64);
   // Act 2 — phase C (205 → 250): the caret sprouts a red line, consumed into
-  //         the flying dove. Phase D (250 → 460): the dove flies the spline.
-  //         Phase E (460 → 515): it lands and becomes "The Word".
+  //         the flying dove. Phase D (250 → 435): the dove flies the spline.
+  //         Phase E (435 → 470): it unwraps into a white line. Phase T
+  //         (470 → 510): the line is consumed as "The Word" types out.
   const pC = clamp01((S - 205) / 45);
-  const pD = clamp01((S - 250) / 210);
-  const pE = clamp01((S - 460) / 55);
+  const pD = clamp01((S - 250) / 185);
+  const pE = clamp01((S - 435) / 35);
+  const pT = clamp01((S - 470) / 40);
 
   const total = entryLen + doveLen + exitLen;
   const head = pA * total; // how far the ink has been laid down (global)
@@ -304,26 +329,39 @@ export default function Hero() {
   const dashSprout = headC <= tailC ? "0 " + bigC : "0 " + tailC.toFixed(1) + " " + (headC - tailC).toFixed(1) + " " + bigC;
 
   // Flying dove: position + heading from the flight spline, flap frame from
-  // scroll, materialise during phase C, dissolve into "The Word" in phase E.
+  // scroll, materialise during phase C, unwrap into the white line in phase E.
   const hasFlight = flightPts.length > 1;
   const [fx, fy] = hasFlight ? splineAt(flightPts, pD) : [0, 0];
-  const [bx, by] = hasFlight ? splineAt(flightPts, Math.max(0, pD - 0.015)) : [0, 0];
-  const [ax, ay] = hasFlight ? splineAt(flightPts, Math.min(1, pD + 0.015)) : [0, 0];
+  const [bx, by] = hasFlight ? splineAt(flightPts, Math.max(0, pD - 0.02)) : [0, 0];
+  const [ax, ay] = hasFlight ? splineAt(flightPts, Math.min(1, pD + 0.02)) : [0, 0];
   const dx = ax - bx;
   const dy = ay - by;
-  const doveFace = dx > 4 ? -1 : 1; // sprite art faces left; flip when heading right
-  const doveRot = Math.max(-16, Math.min(16, (Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI * 0.45));
-  const pFlap = clamp01((S - 250) / 265);
+  // Sprite art faces left. Mirror smoothly through heading changes — the
+  // bird narrows to edge-on mid-turn instead of snap-flipping.
+  const dxn = dx / (Math.hypot(dx, dy) || 1);
+  const doveFace = Math.max(-1, Math.min(1, -dxn * 3)) || 1;
+  const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1));
+  const pFlap = clamp01((S - 250) / 205);
   const frameIdx = Math.floor(pFlap * FLIGHT_FRAME_COUNT * FLAP_PASSES) % FLIGHT_FRAME_COUNT;
-  const doveOpacity = fade(pC, 0.55, 1) * (1 - fade(pE, 0.35, 0.95));
-  const doveScale = 1 - 0.7 * fade(pE, 0, 1);
+  const doveOpacity = fade(pC, 0.55, 1) * (1 - fade(pE, 0.1, 0.7));
+  const doveScale = 1 - 0.25 * fade(pE, 0, 0.7);
 
-  // The welcome lockup bows out as the dove takes flight; the closing lockup
-  // fades in beneath the landing.
+  // Unwrap line: the head spools out of the fading dove toward the word,
+  // then the tail is consumed into it as the letters type.
+  const headU = clamp01(pE / 0.9) * unwrapLen;
+  const tailU = clamp01(pT * 1.05) * headU;
+  const bigU = (unwrapLen * 2 + 10).toFixed(1);
+  const dashUnwrap = headU <= tailU ? "0 " + bigU : "0 " + tailU.toFixed(1) + " " + (headU - tailU).toFixed(1) + " " + bigU;
+
+  // The welcome lockup bows out as the dove takes flight; the closing
+  // sentence fades in ahead of the landing, and "The Word" types on in white.
   const welcomeOpacity = 1 - fade(S, 255, 310);
-  const line1Opacity = fade(S, 430, 465);
-  const line1Rise = (1 - fade(S, 430, 465)) * 20;
-  const wordOpacity = fade(pE, 0.15, 0.8);
+  const line1Opacity = fade(S, 400, 430);
+  const line1Rise = (1 - fade(S, 400, 430)) * 20;
+  const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
+  const caretWLeft = (pT * 100).toFixed(2) + "%";
+  let caretWOpacity = 0;
+  if (S > 468) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((S - 512) / 8);
 
   const navLinkStyle: React.CSSProperties = {
     fontSize: 14,
@@ -344,6 +382,7 @@ export default function Hero() {
             <path d={pathDove} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashDove }} />
             <path d={pathExit} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashExit }} />
             <path d={pathSprout} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashSprout }} />
+            <path d={pathUnwrap} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashUnwrap }} />
           </svg>
         )}
 
@@ -397,15 +436,21 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* closing lockup — the dove lands here and becomes "The Word".
-            Always rendered (opacity-driven) so measure() can find it. */}
-        <div style={{ position: "absolute", left: 0, right: 0, top: "64%", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 2, textAlign: "center", padding: "0 16px", pointerEvents: "none" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.8vw, 52px)", fontWeight: 600, letterSpacing: "-0.012em", lineHeight: 1.15, color: "#1d1d1f", opacity: line1Opacity, transform: `translateY(${line1Rise.toFixed(1)}px)` }}>
-            We Teach, Preach and Live
-          </div>
-          <div ref={twRef} style={{ fontFamily: "var(--font-display)", fontSize: "clamp(38px, 5.6vw, 76px)", fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.1, color: "#d52821", opacity: wordOpacity }}>
-            The Word
-          </div>
+        {/* closing lockup — one line; the dove unwraps into a white thread
+            that types "The Word" at the end of the sentence. Always rendered
+            (opacity-driven) so measure() can find it. */}
+        <div style={{ position: "absolute", left: 0, right: 0, top: "66%", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "baseline", columnGap: "0.4em", rowGap: 6, zIndex: 2, textAlign: "center", padding: "0 16px", pointerEvents: "none", fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.8vw, 52px)", letterSpacing: "-0.012em", lineHeight: 1.15 }}>
+          <span style={{ fontWeight: 600, color: "#1d1d1f", opacity: line1Opacity, transform: `translateY(${line1Rise.toFixed(1)}px)` }}>We Teach, Preach and Live</span>
+          <span ref={twRef} style={{ position: "relative", fontWeight: 700 }}>
+            {/* invisible sizing copy keeps the layout stable */}
+            <span style={{ visibility: "hidden" }}>The Word</span>
+            {ready && (
+              <>
+                <span style={{ position: "absolute", inset: 0, color: "#ffffff", clipPath: clipW }}>The Word</span>
+                <span style={{ position: "absolute", top: "8%", bottom: "8%", left: caretWLeft, width: 4, borderRadius: 2, background: "#ffffff", transform: "translateX(-50%)", opacity: caretWOpacity }} />
+              </>
+            )}
+          </span>
         </div>
 
         {/* scroll hint */}
