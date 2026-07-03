@@ -13,6 +13,9 @@ export default function Home() {
         <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, letterSpacing: "-0.01em", color: "#1d1d1f" }}>
           More to come
         </p>
+        <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, letterSpacing: "-0.01em", color: "#1d1d1f" }}>
+          This test worked
+        </p>
       </section>
     </>
   );
