@@ -38,7 +38,7 @@ const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 // ends (trapezoidal velocity — even wing-beats through the middle).
 const ANIM_FROM = 205;
 const ANIM_TO = 520;
-const ANIM_MS = 12500;
+const ANIM_MS = 17500;
 const TRIGGER_S = 195; // scroll depth that cues the performance
 const RAMP = 0.12; // eased fraction of the clock at each end
 
@@ -51,8 +51,8 @@ const FRAME_R = { start: 0, count: 35 }; // dove_001..035 — fly right
 const FRAME_T = { start: 35, count: 43 }; // dove_036..078 — turn right→left
 const FRAME_L = { start: 78, count: 14 }; // dove_079..092 — fly left
 const FLIGHT_FRAME_COUNT = 92;
-const FLAP_STEP_VH = 1.8; // virtual-clock distance per wing-beat frame (~14 fps)
-const TURN_HALF = 0.05; // half-width of a turn window, as a fraction of flight distance
+const FLAP_STEP_VH = 1.4; // virtual-clock distance per wing-beat frame (~13 fps)
+const TURN_HALF = 0.1; // half-width of a turn window, as a fraction of flight distance
 const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(3, "0")}.png`;
 
 // Flight waypoints between the runtime-anchored start (where the dove
@@ -430,7 +430,7 @@ export default function Hero() {
   //         phase B (120 → 184): line retracts as "Toronto" is written.
   const pA = clamp01(S / 110);
   const pB = clamp01((S - 120) / 64);
-  // Act 2 — a ~12.5s performance on the virtual clock A (205 → 520): the
+  // Act 2 — a ~17.5s performance on the virtual clock A (205 → 520): the
   //         caret sprouts a red line (205 → 250) consumed into the flying
   //         dove; the dove flies the spline (250 → 435); unwraps into a white
   //         line (435 → 470); "The Word" types out (470 → 510).
