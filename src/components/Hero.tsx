@@ -37,16 +37,16 @@ const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 // read unchanged; the clock covers them in ANIM_MS with soft ramps at both
 // ends (trapezoidal velocity — even wing-beats through the middle).
 const ANIM_FROM = 205;
-const ANIM_TO = 520;
-const ANIM_MS = 17500;
+const ANIM_TO = 505;
+const ANIM_MS = 16700;
 const TRIGGER_S = 184; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
 
 // The Act 1 line changes color in flight: it turns white on its final
 // approach into the dove drawing, and stays white coming out of the dove
 // before turning red again on its way to "Toronto".
-const ENTRY_WHITE_FROM = 0.78; // fraction of the entry line where white begins
-const EXIT_WHITE_UNTIL = 0.45; // fraction of the exit line where red resumes
+const ENTRY_WHITE_FROM = 0.88; // fraction of the entry line where white begins
+const EXIT_WHITE_UNTIL = 0.25; // fraction of the exit line where red resumes
 
 // Flying-dove sprite frames (white line art on transparency) from the
 // turning-flight GIF, in three sections: a right-facing flap cycle, the full
@@ -441,14 +441,14 @@ export default function Hero() {
   //         phase B (120 → 184): line retracts as "Toronto" is written.
   const pA = clamp01(S / 110);
   const pB = clamp01((S - 120) / 64);
-  // Act 2 — a ~17.5s performance on the virtual clock A (205 → 520): the
+  // Act 2 — a ~16.7s performance on the virtual clock A (205 → 505): the
   //         caret sprouts a red line (205 → 250) consumed into the flying
   //         dove; the dove flies the spline (250 → 435); unwraps into a white
-  //         line (435 → 470); "The Word" types out (470 → 510).
+  //         line (435 → 470); "The Word" types out briskly (470 → 496).
   const pC = clamp01((A - 205) / 45);
   const pD = clamp01((A - 250) / 185);
   const pE = clamp01((A - 435) / 35);
-  const pT = clamp01((A - 470) / 40);
+  const pT = clamp01((A - 470) / 26);
 
   const total = entryLen + doveLen + exitLen;
   const head = pA * total; // how far the ink has been laid down (global)
@@ -534,13 +534,13 @@ export default function Hero() {
   // The welcome lockup bows out as the dove takes flight and returns to its
   // place as "The Word" types on; the closing sentence fades in ahead of the
   // landing.
-  const welcomeOpacity = Math.max(1 - fade(A, 255, 310), fade(A, 470, 505));
+  const welcomeOpacity = Math.max(1 - fade(A, 255, 310), fade(A, 470, 496));
   const line1Opacity = fade(A, 400, 430);
   const line1Rise = (1 - fade(A, 400, 430)) * 20;
   const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
   const caretWLeft = (pT * 100).toFixed(2) + "%";
   let caretWOpacity = 0;
-  if (A > 468) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((A - 512) / 8);
+  if (A > 468) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((A - 499) / 6);
 
   const navLinkStyle: React.CSSProperties = {
     fontSize: 14,
