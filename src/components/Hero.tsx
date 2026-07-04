@@ -554,6 +554,10 @@ export default function Hero() {
       <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
         <LightShaftBackground />
 
+        {/* the sky settles into deep indigo at the base — the color of the
+            next section, so the hero hands off seamlessly */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: "linear-gradient(to bottom, rgba(108, 59, 179, 0) 0%, rgba(108, 59, 179, 0.45) 60%, #6C3BB3 100%)", pointerEvents: "none" }} />
+
         {/* the red line, drawn by scroll: enters top-left, loops, dives under the headline */}
         {ready && (
           <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none", overflow: "visible" }}>
@@ -635,7 +639,7 @@ export default function Hero() {
         </div>
 
         {/* scroll hint */}
-        <div style={{ position: "absolute", bottom: 28, left: 0, right: 0, textAlign: "center", fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(29, 29, 31, 0.55)", opacity: hintOpacity, zIndex: 3 }}>Keep scrolling</div>
+        <div style={{ position: "absolute", bottom: 28, left: 0, right: 0, textAlign: "center", fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255, 255, 255, 0.85)", opacity: hintOpacity, zIndex: 3 }}>Keep scrolling</div>
       </div>
     </div>
   );
