@@ -9,7 +9,8 @@ export default function Home() {
   return (
     <>
       <Hero />
-      <section style={{ background: "#6C3BB3", padding: "100px 32px", textAlign: "center" }}>
+      <section style={{ background: "#ffffff", height: 96 }} />
+      <section style={{ background: "#281068", padding: "100px 32px", textAlign: "center" }}>
         <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, letterSpacing: "-0.01em", color: "#ffffff" }}>
           More to come
         </p>

@@ -554,9 +554,8 @@ export default function Hero() {
       <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
         <LightShaftBackground />
 
-        {/* the sky settles into deep indigo at the base — the color of the
-            next section, so the hero hands off seamlessly */}
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: "linear-gradient(to bottom, rgba(108, 59, 179, 0) 0%, rgba(108, 59, 179, 0.45) 60%, #6C3BB3 100%)", pointerEvents: "none" }} />
+        {/* the sky settles into the logo's deep indigo at the base */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: "linear-gradient(to bottom, rgba(40, 16, 104, 0) 0%, rgba(40, 16, 104, 0.45) 60%, #281068 100%)", pointerEvents: "none" }} />
 
         {/* the red line, drawn by scroll: enters top-left, loops, dives under the headline */}
         {ready && (
