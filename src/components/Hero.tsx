@@ -39,8 +39,14 @@ const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 const ANIM_FROM = 205;
 const ANIM_TO = 520;
 const ANIM_MS = 17500;
-const TRIGGER_S = 195; // scroll depth that cues the performance
+const TRIGGER_S = 184; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
+
+// The Act 1 line changes color in flight: it turns white on its final
+// approach into the dove drawing, and stays white coming out of the dove
+// before turning red again on its way to "Toronto".
+const ENTRY_WHITE_FROM = 0.78; // fraction of the entry line where white begins
+const EXIT_WHITE_UNTIL = 0.45; // fraction of the exit line where red resumes
 
 // Flying-dove sprite frames (white line art on transparency) from the
 // turning-flight GIF, in three sections: a right-facing flap cycle, the full
@@ -363,9 +369,14 @@ export default function Hero() {
         finishFlight(false);
         return;
       }
-      const t0 = performance.now();
+      // Accumulate clamped deltas rather than measuring from an absolute
+      // start, so a hidden tab pauses the performance instead of skipping it.
+      let elapsed = 0;
+      let last = 0;
       const step = (now: number) => {
-        const k = Math.min(1, (now - t0) / ANIM_MS);
+        if (last) elapsed += Math.min(now - last, 100);
+        last = now;
+        const k = Math.min(1, elapsed / ANIM_MS);
         setAnim(ANIM_FROM + easeClock(k) * (ANIM_TO - ANIM_FROM));
         if (k < 1) fl.raf = requestAnimationFrame(step);
         else finishFlight(true);
@@ -443,15 +454,23 @@ export default function Hero() {
   const head = pA * total; // how far the ink has been laid down (global)
   const tail = pB * head; // how much has been consumed into the word (global)
   const big = (total * 2 + 10).toFixed(1);
-  const seg = (globalStart: number, segLen: number) => {
+  // A path can host more than one color segment: segP shows the global-ink
+  // slice [globalStart, globalStart + segLen], drawn starting `pathOffset`
+  // into its own path element.
+  const segP = (pathOffset: number, globalStart: number, segLen: number) => {
     const vs = clamp01((tail - globalStart) / segLen) * segLen;
     const ve = clamp01((head - globalStart) / segLen) * segLen;
     if (ve <= vs) return "0 " + big;
-    return "0 " + vs.toFixed(1) + " " + (ve - vs).toFixed(1) + " " + big;
+    return "0 " + (pathOffset + vs).toFixed(1) + " " + (ve - vs).toFixed(1) + " " + big;
   };
-  const dashEntry = seg(0, entryLen);
-  const dashDove = seg(entryLen, doveLen);
-  const dashExit = seg(entryLen + doveLen, exitLen);
+  // color splits: red → white into the dove, white → red out of it
+  const eSplit = ENTRY_WHITE_FROM * entryLen;
+  const xSplit = EXIT_WHITE_UNTIL * exitLen;
+  const dashEntryRed = segP(0, 0, eSplit);
+  const dashEntryWhite = segP(eSplit, eSplit, entryLen - eSplit);
+  const dashDove = segP(0, entryLen, doveLen);
+  const dashExitWhite = segP(0, entryLen + doveLen, xSplit);
+  const dashExitRed = segP(xSplit, entryLen + doveLen + xSplit, exitLen - xSplit);
 
   // The caret holds after typing, then dissolves as the sprout line grows.
   let caretOpacity = 0;
@@ -538,9 +557,11 @@ export default function Hero() {
         {/* the red line, drawn by scroll: enters top-left, loops, dives under the headline */}
         {ready && (
           <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none", overflow: "visible" }}>
-            <path d={pathEntry} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashEntry }} />
+            <path d={pathEntry} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashEntryRed }} />
+            <path d={pathEntry} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashEntryWhite }} />
             <path d={pathDove} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashDove }} />
-            <path d={pathExit} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashExit }} />
+            <path d={pathExit} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashExitWhite }} />
+            <path d={pathExit} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashExitRed }} />
             <path d={pathSprout} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashSprout }} />
             <path d={pathUnwrap} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashUnwrap }} />
           </svg>
