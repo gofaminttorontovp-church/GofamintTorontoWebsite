@@ -31,21 +31,35 @@ const SCROLL_LENGTH_VH = 620;
 // All phase boundaries below are expressed in these units.
 const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 
-// Flying-dove sprite frames (white line art on transparency), extracted from
-// the reference GIF. The loop plays FLAP_PASSES times across the flight.
-const FLIGHT_FRAME_COUNT = 51;
-const FLAP_PASSES = 2;
-const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(2, "0")}.png`;
+// Flying-dove sprite frames (white line art on transparency) from the
+// turning-flight GIF, in three sections: a right-facing flap cycle, the full
+// right→left turn, and a left-facing flap cycle. Wherever the flight path
+// changes horizontal direction the turn section plays through (reversed for
+// left→right), so the bird visibly banks around instead of mirror-flipping.
+const FRAME_R = { start: 0, count: 35 }; // dove_001..035 — fly right
+const FRAME_T = { start: 35, count: 43 }; // dove_036..078 — turn right→left
+const FRAME_L = { start: 78, count: 14 }; // dove_079..092 — fly left
+const FLIGHT_FRAME_COUNT = 92;
+const FLAP_STEP_VH = 1.6; // scroll distance per wing-beat frame
+const TURN_HALF = 0.05; // half-width of a turn window, as a path fraction
+const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(3, "0")}.png`;
 
 // Flight waypoints between the runtime-anchored start (where the dove
 // materialises below "Toronto") and end (where it unwraps into "The Word"),
-// as [x, y] fractions of the viewport. Paste a hand-drawn path here from the
-// path-drawing tool to reshape the flight exactly.
+// as [x, y] fractions of the viewport — hand-drawn with the path tool.
 const FLIGHT_MIDS_NORM: [number, number][] = [
-  [0.44, 0.45],
-  [0.2, 0.39],
-  [0.13, 0.65],
-  [0.3, 0.8],
+  [0.758, 0.587],
+  [0.794, 0.471],
+  [0.731, 0.378],
+  [0.606, 0.404],
+  [0.475, 0.412],
+  [0.349, 0.438],
+  [0.235, 0.502],
+  [0.128, 0.573],
+  [0.06, 0.681],
+  [0.148, 0.753],
+  [0.275, 0.723],
+  [0.394, 0.671],
 ];
 
 type PathState = {
@@ -60,6 +74,7 @@ type PathState = {
   sproutLen: number;
   unwrapLen: number;
   flightPts: [number, number][];
+  turns: { u: number; dir: number }[];
   doveW: number;
   ready: boolean;
 };
@@ -112,6 +127,7 @@ export default function Hero() {
     sproutLen: 1,
     unwrapLen: 1,
     flightPts: [],
+    turns: [],
     doveW: 0,
     ready: false,
   });
@@ -210,6 +226,20 @@ export default function Hero() {
         ...FLIGHT_MIDS_NORM.map(([mx, my]) => [mx * W, my * H] as [number, number]),
         [fex, fey],
       ];
+      // Find where the path's horizontal direction flips — each one becomes
+      // a window where the turn frames play (dir +1 = right→left).
+      const turns: { u: number; dir: number }[] = [];
+      let prevDx = 0;
+      for (let i = 1; i <= 200; i++) {
+        const [xA] = splineAt(flightPts, (i - 1) / 200);
+        const [xB] = splineAt(flightPts, i / 200);
+        const d = xB - xA;
+        if (Math.abs(d) < 0.0004 * W) continue;
+        if (prevDx !== 0 && Math.sign(d) !== Math.sign(prevDx)) {
+          turns.push({ u: (i - 0.5) / 200, dir: prevDx > 0 ? 1 : -1 });
+        }
+        prevDx = d;
+      }
       // Unwrap line: the white thread the dove spools out, hooking into the
       // left edge of "The Word" where the typing caret picks it up.
       const unwrapCmds =
@@ -242,7 +272,7 @@ export default function Hero() {
       const exitLen = measureLen(pathExit) || 1;
       const sproutLen = measureLen(pathSprout) || 1;
       const unwrapLen = measureLen(pathUnwrap) || 1;
-      setPaths((prev) => ({ ...prev, pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, doveW }));
+      setPaths((prev) => ({ ...prev, pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, turns, doveW }));
     };
 
     const update = () => {
@@ -281,7 +311,7 @@ export default function Hero() {
   }, []);
 
   // ---- derived render values (was renderVals) ----
-  const { pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, doveW, ready } = paths;
+  const { pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, turns, doveW, ready } = paths;
 
   // Scroll progress in vh units, so phases read as absolute scroll distances.
   const S = p * SCROLL_VH;
@@ -336,13 +366,26 @@ export default function Hero() {
   const [ax, ay] = hasFlight ? splineAt(flightPts, Math.min(1, pD + 0.02)) : [0, 0];
   const dx = ax - bx;
   const dy = ay - by;
-  // Sprite art faces left. Mirror smoothly through heading changes — the
-  // bird narrows to edge-on mid-turn instead of snap-flipping.
-  const dxn = dx / (Math.hypot(dx, dy) || 1);
-  const doveFace = Math.max(-1, Math.min(1, -dxn * 3)) || 1;
-  const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1));
-  const pFlap = clamp01((S - 250) / 205);
-  const frameIdx = Math.floor(pFlap * FLIGHT_FRAME_COUNT * FLAP_PASSES) % FLIGHT_FRAME_COUNT;
+  // Frame choice: inside a turn window the turn section scrubs through
+  // (forward for right→left, reversed for left→right); elsewhere the
+  // direction of travel picks which flap cycle loops.
+  let activeTurn: { u: number; dir: number } | null = null;
+  for (const tn of turns) {
+    if (pD > 0 && pD < 1 && Math.abs(pD - tn.u) < TURN_HALF) activeTurn = tn;
+  }
+  let frameIdx: number;
+  let turnEase = 0; // 1 at the heart of a turn — damps the path-tilt
+  if (activeTurn) {
+    const q = clamp01((pD - (activeTurn.u - TURN_HALF)) / (2 * TURN_HALF));
+    const qq = activeTurn.dir > 0 ? q : 1 - q;
+    frameIdx = FRAME_T.start + Math.min(FRAME_T.count - 1, Math.floor(qq * FRAME_T.count));
+    turnEase = Math.sin(Math.PI * q);
+  } else {
+    const sec = dx >= 0 ? FRAME_R : FRAME_L;
+    const flap = Math.max(0, Math.floor((S - 250) / FLAP_STEP_VH));
+    frameIdx = sec.start + (flap % sec.count);
+  }
+  const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1)) * (1 - turnEase);
   const doveOpacity = fade(pC, 0.55, 1) * (1 - fade(pE, 0.1, 0.7));
   const doveScale = 1 - 0.25 * fade(pE, 0, 0.7);
 
@@ -397,7 +440,7 @@ export default function Hero() {
               left: fx,
               top: fy,
               width: doveW,
-              transform: `translate(-50%, -50%) scaleX(${doveFace}) rotate(${doveRot.toFixed(1)}deg) scale(${doveScale.toFixed(3)})`,
+              transform: `translate(-50%, -50%) rotate(${doveRot.toFixed(1)}deg) scale(${doveScale.toFixed(3)})`,
               opacity: doveOpacity,
               zIndex: 2,
               pointerEvents: "none",
