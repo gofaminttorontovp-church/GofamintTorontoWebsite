@@ -52,7 +52,7 @@ const FRAME_T = { start: 35, count: 43 }; // dove_036..078 — turn right→left
 const FRAME_L = { start: 78, count: 14 }; // dove_079..092 — fly left
 const FLIGHT_FRAME_COUNT = 92;
 const FLAP_STEP_VH = 1.8; // virtual-clock distance per wing-beat frame (~14 fps)
-const TURN_HALF = 0.05; // half-width of a turn window, as a path fraction
+const TURN_HALF = 0.05; // half-width of a turn window, as a fraction of flight distance
 const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(3, "0")}.png`;
 
 // Flight waypoints between the runtime-anchored start (where the dove
@@ -85,6 +85,7 @@ type PathState = {
   sproutLen: number;
   unwrapLen: number;
   flightPts: [number, number][];
+  flightArc: number[];
   turns: { u: number; dir: number }[];
   doveW: number;
   ready: boolean;
@@ -119,6 +120,28 @@ const splineAt = (pts: [number, number][], u: number): [number, number] => {
   ];
 };
 
+/**
+ * Map a distance fraction (0..1 of total flight length) to the spline
+ * parameter, via the cumulative arc-length table — so equal clock time
+ * covers equal on-screen distance and the flight speed never wavers.
+ */
+const arcParam = (lut: number[], f: number): number => {
+  const totalLen = lut[lut.length - 1];
+  if (!totalLen) return f;
+  const target = clamp01(f) * totalLen;
+  let lo = 1;
+  let hi = lut.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (lut[mid] < target) lo = mid + 1;
+    else hi = mid;
+  }
+  const l0 = lut[lo - 1];
+  const l1 = lut[lo];
+  const frac = l1 > l0 ? (target - l0) / (l1 - l0) : 0;
+  return (lo - 1 + frac) / (lut.length - 1);
+};
+
 export default function Hero() {
   const heroRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
@@ -139,6 +162,7 @@ export default function Hero() {
     sproutLen: 1,
     unwrapLen: 1,
     flightPts: [],
+    flightArc: [],
     turns: [],
     doveW: 0,
     ready: false,
@@ -238,20 +262,30 @@ export default function Hero() {
         ...FLIGHT_MIDS_NORM.map(([mx, my]) => [mx * W, my * H] as [number, number]),
         [fex, fey],
       ];
-      // Find where the path's horizontal direction flips — each one becomes
-      // a window where the turn frames play (dir +1 = right→left).
+      // Sample the spline once for two things: a cumulative arc-length table
+      // (so the flight runs at constant on-screen speed) and the spots where
+      // the horizontal direction flips — each becomes a window where the
+      // turn frames play (dir +1 = right→left). Turn positions are stored as
+      // distance fractions to match the constant-speed playhead.
+      const ARC_N = 240;
+      const flightArc: number[] = [0];
       const turns: { u: number; dir: number }[] = [];
+      let prevPt = splineAt(flightPts, 0);
       let prevDx = 0;
-      for (let i = 1; i <= 200; i++) {
-        const [xA] = splineAt(flightPts, (i - 1) / 200);
-        const [xB] = splineAt(flightPts, i / 200);
-        const d = xB - xA;
-        if (Math.abs(d) < 0.0004 * W) continue;
-        if (prevDx !== 0 && Math.sign(d) !== Math.sign(prevDx)) {
-          turns.push({ u: (i - 0.5) / 200, dir: prevDx > 0 ? 1 : -1 });
+      for (let i = 1; i <= ARC_N; i++) {
+        const pt = splineAt(flightPts, i / ARC_N);
+        flightArc.push(flightArc[i - 1] + Math.hypot(pt[0] - prevPt[0], pt[1] - prevPt[1]));
+        const d = pt[0] - prevPt[0];
+        if (Math.abs(d) >= 0.0004 * W) {
+          if (prevDx !== 0 && Math.sign(d) !== Math.sign(prevDx)) {
+            turns.push({ u: (flightArc[i - 1] + flightArc[i]) / 2, dir: prevDx > 0 ? 1 : -1 });
+          }
+          prevDx = d;
         }
-        prevDx = d;
+        prevPt = pt;
       }
+      const flightLen = flightArc[ARC_N] || 1;
+      for (const tn of turns) tn.u /= flightLen;
       // Unwrap line: the white thread the dove spools out, hooking into the
       // left edge of "The Word" where the typing caret picks it up.
       const unwrapCmds =
@@ -284,7 +318,7 @@ export default function Hero() {
       const exitLen = measureLen(pathExit) || 1;
       const sproutLen = measureLen(pathSprout) || 1;
       const unwrapLen = measureLen(pathUnwrap) || 1;
-      setPaths((prev) => ({ ...prev, pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, turns, doveW }));
+      setPaths((prev) => ({ ...prev, pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, flightArc, turns, doveW }));
     };
 
     // ---- Act 2 flight: a one-shot, time-driven performance cued by scroll ----
@@ -386,7 +420,7 @@ export default function Hero() {
   }, []);
 
   // ---- derived render values (was renderVals) ----
-  const { pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, turns, doveW, ready } = paths;
+  const { pathEntry, pathDove, pathExit, pathSprout, pathUnwrap, entryLen, doveLen, exitLen, sproutLen, unwrapLen, flightPts, flightArc, turns, doveW, ready } = paths;
 
   // Scroll drives Act 1; the self-playing flight clock drives Act 2.
   const S = p * SCROLL_VH;
@@ -434,12 +468,16 @@ export default function Hero() {
   const bigC = (sproutLen * 2 + 10).toFixed(1);
   const dashSprout = headC <= tailC ? "0 " + bigC : "0 " + tailC.toFixed(1) + " " + (headC - tailC).toFixed(1) + " " + bigC;
 
-  // Flying dove: position + heading from the flight spline, flap frame from
-  // scroll, materialise during phase C, unwrap into the white line in phase E.
-  const hasFlight = flightPts.length > 1;
-  const [fx, fy] = hasFlight ? splineAt(flightPts, pD) : [0, 0];
-  const [bx, by] = hasFlight ? splineAt(flightPts, Math.max(0, pD - 0.02)) : [0, 0];
-  const [ax, ay] = hasFlight ? splineAt(flightPts, Math.min(1, pD + 0.02)) : [0, 0];
+  // Flying dove: the playhead pD is a distance fraction — arcParam converts
+  // it to the spline parameter so the bird covers equal distance per tick,
+  // one clean constant-speed flight. Materialise in phase C, unwrap in E.
+  const hasFlight = flightPts.length > 1 && flightArc.length > 1;
+  const uMid = hasFlight ? arcParam(flightArc, pD) : 0;
+  const uPrev = hasFlight ? arcParam(flightArc, Math.max(0, pD - 0.02)) : 0;
+  const uNext = hasFlight ? arcParam(flightArc, Math.min(1, pD + 0.02)) : 0;
+  const [fx, fy] = hasFlight ? splineAt(flightPts, uMid) : [0, 0];
+  const [bx, by] = hasFlight ? splineAt(flightPts, uPrev) : [0, 0];
+  const [ax, ay] = hasFlight ? splineAt(flightPts, uNext) : [0, 0];
   const dx = ax - bx;
   const dy = ay - by;
   // Frame choice: inside a turn window the turn section scrubs through
@@ -474,9 +512,10 @@ export default function Hero() {
   const bigU = (unwrapLen * 2 + 10).toFixed(1);
   const dashUnwrap = headU <= tailU ? "0 " + bigU : "0 " + tailU.toFixed(1) + " " + (headU - tailU).toFixed(1) + " " + bigU;
 
-  // The welcome lockup bows out as the dove takes flight; the closing
-  // sentence fades in ahead of the landing, and "The Word" types on in white.
-  const welcomeOpacity = 1 - fade(A, 255, 310);
+  // The welcome lockup bows out as the dove takes flight and returns to its
+  // place as "The Word" types on; the closing sentence fades in ahead of the
+  // landing.
+  const welcomeOpacity = Math.max(1 - fade(A, 255, 310), fade(A, 470, 505));
   const line1Opacity = fade(A, 400, 430);
   const line1Rise = (1 - fade(A, 400, 430)) * 20;
   const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
