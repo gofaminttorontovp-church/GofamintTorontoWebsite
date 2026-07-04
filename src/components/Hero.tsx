@@ -386,10 +386,10 @@ export default function Hero() {
     frameIdx = sec.start + (flap % sec.count);
   }
   const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1)) * (1 - turnEase);
-  // The bird dissolves along its final approach — ~99% gone before it even
-  // reaches the hover point — and the last trace clears as the unwrap starts.
-  const doveOpacity = fade(pC, 0.55, 1) * (1 - 0.99 * fade(pD, 0.78, 0.97)) * (1 - fade(pE, 0, 0.3));
-  const doveScale = 1 - 0.25 * fade(pD, 0.78, 0.97);
+  // The bird dissolves along its final approach — ~90% gone as the unwrap
+  // line starts — and the last trace clears in the first beat of the unwrap.
+  const doveOpacity = fade(pC, 0.55, 1) * (1 - 0.9 * fade(pD, 0.85, 1)) * (1 - fade(pE, 0, 0.3));
+  const doveScale = 1 - 0.25 * fade(pD, 0.85, 1);
 
   // Unwrap line: the head spools out of the fading dove toward the word,
   // then the tail is consumed into it as the letters type.
