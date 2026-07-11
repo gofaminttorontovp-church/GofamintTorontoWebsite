@@ -6,6 +6,8 @@ export const NAV_LINKS = [
   { href: "/visit", label: "Visit" },
   { href: "/sermons", label: "Sermons" },
   { href: "/events", label: "Events" },
+  { href: "/media", label: "Media" },
+  { href: "/groups", label: "Groups" },
 ] as const;
 
 /** Small uppercase section eyebrow (e.g. "ABOUT"). */
