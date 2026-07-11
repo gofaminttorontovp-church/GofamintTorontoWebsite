@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { NAV_LINKS } from "@/lib/site";
 
 /**
- * Sticky, frosted site header for the content pages (About / Visit / Sermons /
- * Events). The current page's link is shown in the accent colour. The home
+ * Sticky, frosted site header for the content pages (About / Visit / Events).
+ * The current page's link is shown in the accent colour. The home
  * page uses its own transparent header baked into the hero instead.
  */
 export default function SiteHeader() {

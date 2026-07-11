@@ -2,7 +2,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
 /**
- * Shared chrome for the content pages (About / Visit / Sermons / Events):
+ * Shared chrome for the content pages (About / Visit / Events):
  * a sticky frosted header on top and the black footer at the bottom. The
  * home page sits outside this group and keeps its own hero header.
  */

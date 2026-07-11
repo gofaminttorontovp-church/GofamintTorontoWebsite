@@ -4,7 +4,6 @@ import type { CSSProperties } from "react";
 export const NAV_LINKS = [
   { href: "/about", label: "About" },
   { href: "/visit", label: "Visit" },
-  { href: "/sermons", label: "Sermons" },
   { href: "/events", label: "Events" },
   { href: "/media", label: "Media" },
   { href: "/groups", label: "Groups" },
