@@ -2,7 +2,7 @@ import Hero from "@/components/Hero";
 
 /**
  * Home page — the scroll-driven hero (the "first section") followed by a
- * small "More to come" placeholder. The About / Visit / Sermons / Events
+ * small "More to come" placeholder. The About / Visit / Events
  * content lives on its own routes under the (site) route group.
  */
 export default function Home() {
