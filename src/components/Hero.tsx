@@ -8,10 +8,9 @@ import { NAV_LINKS } from "@/lib/site";
 /**
  * Scroll-driven hero, ported from the Gofamint Toronto design.
  *
- * Act 1 — a white line sweeps in from the upper right, turns brand red as it
- * curves down beneath the headline, then retracts into the word "Toronto",
- * written letter-by-letter in red under the static "Welcome to Gofamint"
- * headline.
+ * Act 1 — a brand-red line sweeps in above the headline, curves down beneath
+ * it, then retracts into the word "Toronto", written letter-by-letter in red
+ * under the static "Welcome to Gofamint" headline.
  *
  * Act 2 — once "Toronto" is written, a slow, self-playing performance takes
  * over: the typing caret sprouts back into a red line, which is consumed
@@ -36,9 +35,9 @@ const ANIM_MS = 16700;
 const TRIGGER_S = 105; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
 
-// The Act 1 line enters white and turns brand red for the rest of its run
-// down into "Toronto".
-const LINE_WHITE_UNTIL = 0.25; // fraction of the line drawn white before red
+// The line is drawn entirely in brand red, starting part-way along the curve —
+// the stretch before that carried the old white lead-in and is never inked.
+const LINE_LEAD_IN = 0.25; // fraction of the curve skipped before the line starts
 
 // Flying-dove sprite frames (white line art on transparency) from the
 // turning-flight GIF, in three sections: a right-facing flap cycle, the full
@@ -253,8 +252,8 @@ export default function Hero() {
       const doveW = 0.3 * Math.min(W, H);
 
       // three INDEPENDENT sub-paths so coloring never depends on draw order:
-      // the Act 1 line (white → red), then the Act 2 sprout (red) and the
-      // unwrap (white).
+      // the Act 1 line (red), then the Act 2 sprout (red) and the unwrap
+      // (white).
       const pathLine = lineCmds;
       const pathSprout = sproutCmds;
       const pathUnwrap = unwrapCmds;
@@ -399,23 +398,14 @@ export default function Hero() {
   const pE = clamp01((A - 435) / 35);
   const pT = clamp01((A - 470) / 26);
 
-  const total = lineLen;
-  const head = pA * total; // how far the ink has been laid down (global)
-  const tail = pB * head; // how much has been consumed into the word (global)
-  const big = (total * 2 + 10).toFixed(1);
-  // A path can host more than one color segment: segP shows the global-ink
-  // slice [globalStart, globalStart + segLen], drawn starting `pathOffset`
-  // into its own path element.
-  const segP = (pathOffset: number, globalStart: number, segLen: number) => {
-    const vs = clamp01((tail - globalStart) / segLen) * segLen;
-    const ve = clamp01((head - globalStart) / segLen) * segLen;
-    if (ve <= vs) return "0 " + big;
-    return "0 " + (pathOffset + vs).toFixed(1) + " " + (ve - vs).toFixed(1) + " " + big;
-  };
-  // color split: white where the line enters, red for the rest of the run
-  const split = LINE_WHITE_UNTIL * lineLen;
-  const dashWhite = segP(0, 0, split);
-  const dashRed = segP(split, split, lineLen - split);
+  // The head lays ink down through phase A, then the tail is consumed into
+  // the word through phase B — both measured from the line's own start, so
+  // the skipped lead-in stays blank throughout.
+  const lead = LINE_LEAD_IN * lineLen;
+  const headL = pA * (lineLen - lead);
+  const tailL = pB * headL;
+  const bigL = (lineLen * 2 + 10).toFixed(1);
+  const dashLine = headL <= tailL ? "0 " + bigL : "0 " + (lead + tailL).toFixed(1) + " " + (headL - tailL).toFixed(1) + " " + bigL;
 
   // The caret holds after typing, then dissolves as the sprout line grows.
   let caretOpacity = 0;
@@ -502,11 +492,10 @@ export default function Hero() {
         {/* the sky settles into the logo's deep indigo at the base */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: "linear-gradient(to bottom, rgba(40, 16, 104, 0) 0%, rgba(40, 16, 104, 0.45) 60%, #281068 100%)", pointerEvents: "none" }} />
 
-        {/* the line, drawn by scroll: enters upper-right in white, turns red, dives under the headline */}
+        {/* the red line, drawn by scroll: enters above the headline and dives under it */}
         {ready && (
           <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none", overflow: "visible" }}>
-            <path d={pathLine} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashWhite }} />
-            <path d={pathLine} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashRed }} />
+            <path d={pathLine} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashLine }} />
             <path d={pathSprout} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashSprout }} />
             <path d={pathUnwrap} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashUnwrap }} />
           </svg>
