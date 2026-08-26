@@ -13,14 +13,14 @@ import { NAV_LINKS } from "@/lib/site";
  * under the static "Welcome to Gofamint" headline.
  *
  * Act 2 — once "Toronto" is written, a slow, self-playing performance takes
- * over: the typing caret sprouts back into a red line, which is consumed
+ * over: the typing caret sprouts back into a white line, which is consumed
  * into a white flying dove (frame-by-frame line art in /public/dove-flight).
  * The dove glides the hand-drawn spline, unwraps into a white line, and
  * types out "The Word" at the end of the closing sentence — then the page
  * gently carries the visitor on to the next section.
  */
 
-const SCROLL_LENGTH_VH = 250;
+const SCROLL_LENGTH_VH = 240;
 // Total scrollable distance (hero height minus the pinned viewport), in vh.
 // Act 1's phase boundaries are expressed in these units.
 const SCROLL_VH = SCROLL_LENGTH_VH - 100;
@@ -32,12 +32,8 @@ const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 const ANIM_FROM = 205;
 const ANIM_TO = 505;
 const ANIM_MS = 16700;
-const TRIGGER_S = 105; // cue the performance the moment "Toronto" is written
+const TRIGGER_S = 90; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
-
-// The line is drawn entirely in brand red, starting part-way along the curve —
-// the stretch before that carried the old white lead-in and is never inked.
-const LINE_LEAD_IN = 0.25; // fraction of the curve skipped before the line starts
 
 // Flying-dove sprite frames (white line art on transparency) from the
 // turning-flight GIF, in three sections: a right-facing flap cycle, the full
@@ -187,13 +183,13 @@ export default function Hero() {
       const ey = t.top - s.top + t.height * 0.58;
       const n = (v: number) => v.toFixed(1);
 
-      // The line enters from the upper right — where the dove drawing used to
-      // hand the stroke over — and curves down and left into "Toronto".
-      const startX = 0.67 * W + 0.007 * Math.min(W, H);
-      const startY = 0.13 * H + 0.147 * Math.min(W, H);
+      // The line enters from just off the right edge, sweeps down and left
+      // over the headline in one arc, then hooks back into "Toronto". It picks
+      // up the old curve at (0.3W, 0.5H), arriving on the same vertical
+      // tangent, so the hook below is unchanged.
       const lineCmds =
-        "M " + n(startX) + " " + n(startY) +
-        " C " + n(startX - 0.02 * W) + " " + n(startY + 0.1 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
+        "M " + n(1.04 * W) + " " + n(0.1 * H) +
+        " C " + n(0.72 * W) + " " + n(0.16 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
         " C " + n(0.3 * W) + " " + n(0.58 * H) + " " + n(ex - 0.08 * W) + " " + n(ey + 0.04 * H) + " " + n(ex) + " " + n(ey);
 
       // Act 2 geometry — the sprout line grows out of the parked caret (right
@@ -252,8 +248,7 @@ export default function Hero() {
       const doveW = 0.3 * Math.min(W, H);
 
       // three INDEPENDENT sub-paths so coloring never depends on draw order:
-      // the Act 1 line (red), then the Act 2 sprout (red) and the unwrap
-      // (white).
+      // the Act 1 line (red), then the Act 2 sprout and unwrap (both white).
       const pathLine = lineCmds;
       const pathSprout = sproutCmds;
       const pathUnwrap = unwrapCmds;
@@ -340,9 +335,9 @@ export default function Hero() {
       const sNow = next * SCROLL_VH;
       if (sNow >= TRIGGER_S) {
         startFlight();
-      } else if (fl.playing && sNow < 85) {
+      } else if (fl.playing && sNow < 70) {
         stopFlight(); // scrolled well away mid-performance — abort and re-arm
-      } else if (fl.done && sNow < 25) {
+      } else if (fl.done && sNow < 20) {
         fl.done = false; // back near the top: reset so the story can replay
         setAnim(0);
       }
@@ -385,12 +380,12 @@ export default function Hero() {
   const S = p * SCROLL_VH;
   const A = anim;
 
-  // Act 1 — phase A (0 → 60): line draws in, then dives under the headline.
-  //         phase B (65 → 105): line retracts as "Toronto" is written.
-  const pA = clamp01(S / 60);
-  const pB = clamp01((S - 65) / 40);
+  // Act 1 — phase A (0 → 45): line draws in, then dives under the headline.
+  //         phase B (50 → 90): line retracts as "Toronto" is written.
+  const pA = clamp01(S / 45);
+  const pB = clamp01((S - 50) / 40);
   // Act 2 — a ~16.7s performance on the virtual clock A (205 → 505): the
-  //         caret sprouts a red line (205 → 250) consumed into the flying
+  //         caret sprouts a white line (205 → 250) consumed into the flying
   //         dove; the dove flies the spline (250 → 435); unwraps into a white
   //         line (435 → 470); "The Word" types out briskly (470 → 496).
   const pC = clamp01((A - 205) / 45);
@@ -399,21 +394,19 @@ export default function Hero() {
   const pT = clamp01((A - 470) / 26);
 
   // The head lays ink down through phase A, then the tail is consumed into
-  // the word through phase B — both measured from the line's own start, so
-  // the skipped lead-in stays blank throughout.
-  const lead = LINE_LEAD_IN * lineLen;
-  const headL = pA * (lineLen - lead);
+  // the word through phase B.
+  const headL = pA * lineLen;
   const tailL = pB * headL;
   const bigL = (lineLen * 2 + 10).toFixed(1);
-  const dashLine = headL <= tailL ? "0 " + bigL : "0 " + (lead + tailL).toFixed(1) + " " + (headL - tailL).toFixed(1) + " " + bigL;
+  const dashLine = headL <= tailL ? "0 " + bigL : "0 " + tailL.toFixed(1) + " " + (headL - tailL).toFixed(1) + " " + bigL;
 
   // The caret holds after typing, then dissolves as the sprout line grows.
   let caretOpacity = 0;
-  if (S > 65) caretOpacity = pB < 1 ? 1 : 1 - clamp01(pC / 0.18);
+  if (S > 50) caretOpacity = pB < 1 ? 1 : 1 - clamp01(pC / 0.18);
 
   const clip = "inset(0 " + ((1 - pB) * 100).toFixed(2) + "% 0 0)";
   const caretLeft = (pB * 100).toFixed(2) + "%";
-  const hintOpacity = clamp01(1 - S / 10);
+  const hintOpacity = clamp01(1 - S / 8);
 
   // Sprout line: the head advances out of the caret, then the tail is
   // consumed into the head — the line "becomes" the dove.
@@ -496,7 +489,7 @@ export default function Hero() {
         {ready && (
           <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none", overflow: "visible" }}>
             <path d={pathLine} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashLine }} />
-            <path d={pathSprout} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashSprout }} />
+            <path d={pathSprout} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashSprout }} />
             <path d={pathUnwrap} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashUnwrap }} />
           </svg>
         )}
