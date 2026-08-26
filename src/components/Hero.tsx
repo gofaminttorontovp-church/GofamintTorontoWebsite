@@ -21,7 +21,7 @@ import { NAV_LINKS } from "@/lib/site";
  * gently carries the visitor on to the next section.
  */
 
-const SCROLL_LENGTH_VH = 330;
+const SCROLL_LENGTH_VH = 250;
 // Total scrollable distance (hero height minus the pinned viewport), in vh.
 // Act 1's phase boundaries are expressed in these units.
 const SCROLL_VH = SCROLL_LENGTH_VH - 100;
@@ -33,7 +33,7 @@ const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 const ANIM_FROM = 205;
 const ANIM_TO = 505;
 const ANIM_MS = 16700;
-const TRIGGER_S = 184; // cue the performance the moment "Toronto" is written
+const TRIGGER_S = 105; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
 
 // The Act 1 line enters white and turns brand red for the rest of its run
@@ -341,9 +341,9 @@ export default function Hero() {
       const sNow = next * SCROLL_VH;
       if (sNow >= TRIGGER_S) {
         startFlight();
-      } else if (fl.playing && sNow < 150) {
+      } else if (fl.playing && sNow < 85) {
         stopFlight(); // scrolled well away mid-performance — abort and re-arm
-      } else if (fl.done && sNow < 40) {
+      } else if (fl.done && sNow < 25) {
         fl.done = false; // back near the top: reset so the story can replay
         setAnim(0);
       }
@@ -386,10 +386,10 @@ export default function Hero() {
   const S = p * SCROLL_VH;
   const A = anim;
 
-  // Act 1 — phase A (0 → 110): line draws in, then dives under the headline.
-  //         phase B (120 → 184): line retracts as "Toronto" is written.
-  const pA = clamp01(S / 110);
-  const pB = clamp01((S - 120) / 64);
+  // Act 1 — phase A (0 → 60): line draws in, then dives under the headline.
+  //         phase B (65 → 105): line retracts as "Toronto" is written.
+  const pA = clamp01(S / 60);
+  const pB = clamp01((S - 65) / 40);
   // Act 2 — a ~16.7s performance on the virtual clock A (205 → 505): the
   //         caret sprouts a red line (205 → 250) consumed into the flying
   //         dove; the dove flies the spline (250 → 435); unwraps into a white
@@ -419,11 +419,11 @@ export default function Hero() {
 
   // The caret holds after typing, then dissolves as the sprout line grows.
   let caretOpacity = 0;
-  if (S > 120) caretOpacity = pB < 1 ? 1 : 1 - clamp01(pC / 0.18);
+  if (S > 65) caretOpacity = pB < 1 ? 1 : 1 - clamp01(pC / 0.18);
 
   const clip = "inset(0 " + ((1 - pB) * 100).toFixed(2) + "% 0 0)";
   const caretLeft = (pB * 100).toFixed(2) + "%";
-  const hintOpacity = clamp01(1 - S / 16);
+  const hintOpacity = clamp01(1 - S / 10);
 
   // Sprout line: the head advances out of the caret, then the tail is
   // consumed into the head — the line "becomes" the dove.
