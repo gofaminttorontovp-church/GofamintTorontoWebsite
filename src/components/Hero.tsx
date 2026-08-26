@@ -35,6 +35,10 @@ const ANIM_MS = 16700;
 const TRIGGER_S = 90; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
 
+// The line is drawn entirely in brand red, starting part-way along the curve —
+// the stretch before that carried the old white lead-in and is never inked.
+const LINE_LEAD_IN = 0.25; // fraction of the curve skipped before the line starts
+
 // Flying-dove sprite frames (white line art on transparency) from the
 // turning-flight GIF, in three sections: a right-facing flap cycle, the full
 // right→left turn, and a left-facing flap cycle. Wherever the flight path
@@ -183,13 +187,13 @@ export default function Hero() {
       const ey = t.top - s.top + t.height * 0.58;
       const n = (v: number) => v.toFixed(1);
 
-      // The line enters from just off the right edge, sweeps down and left
-      // over the headline in one arc, then hooks back into "Toronto". It picks
-      // up the old curve at (0.3W, 0.5H), arriving on the same vertical
-      // tangent, so the hook below is unchanged.
+      // The line enters from the upper right — where the dove drawing used to
+      // hand the stroke over — and curves down and left into "Toronto".
+      const startX = 0.67 * W + 0.007 * Math.min(W, H);
+      const startY = 0.13 * H + 0.147 * Math.min(W, H);
       const lineCmds =
-        "M " + n(1.04 * W) + " " + n(0.1 * H) +
-        " C " + n(0.72 * W) + " " + n(0.16 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
+        "M " + n(startX) + " " + n(startY) +
+        " C " + n(startX - 0.02 * W) + " " + n(startY + 0.1 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
         " C " + n(0.3 * W) + " " + n(0.58 * H) + " " + n(ex - 0.08 * W) + " " + n(ey + 0.04 * H) + " " + n(ex) + " " + n(ey);
 
       // Act 2 geometry — the sprout line grows out of the parked caret (right
@@ -394,11 +398,13 @@ export default function Hero() {
   const pT = clamp01((A - 470) / 26);
 
   // The head lays ink down through phase A, then the tail is consumed into
-  // the word through phase B.
-  const headL = pA * lineLen;
+  // the word through phase B — both measured from the line's own start, so
+  // the skipped lead-in stays blank throughout.
+  const lead = LINE_LEAD_IN * lineLen;
+  const headL = pA * (lineLen - lead);
   const tailL = pB * headL;
   const bigL = (lineLen * 2 + 10).toFixed(1);
-  const dashLine = headL <= tailL ? "0 " + bigL : "0 " + tailL.toFixed(1) + " " + (headL - tailL).toFixed(1) + " " + bigL;
+  const dashLine = headL <= tailL ? "0 " + bigL : "0 " + (lead + tailL).toFixed(1) + " " + (headL - tailL).toFixed(1) + " " + bigL;
 
   // The caret holds after typing, then dissolves as the sprout line grows.
   let caretOpacity = 0;
