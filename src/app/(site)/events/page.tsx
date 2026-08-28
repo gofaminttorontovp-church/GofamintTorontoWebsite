@@ -1,18 +1,12 @@
 import type { Metadata } from "next";
 import AnnouncementsSection from "@/components/AnnouncementsSection";
-import { eyebrow, h2 } from "@/lib/site";
+import { eyebrow, h2, UPCOMING_EVENTS } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Events",
   description:
-    "What is on this month at Gofamint Toronto, and the announcements the church is carrying: Sunday worship, nights of worship, and community outreach.",
+    "What is coming up at Gofamint Toronto: the dates for the youth service, the men's conference, and the announcements the church is carrying.",
 };
-
-const EVENTS = [
-  { date: "Jul 5", title: "Sunday worship", time: "10:00am", last: false },
-  { date: "Jul 10", title: "Night of worship", time: "7:00pm", last: false },
-  { date: "Jul 18", title: "Community outreach", time: "10:00am", last: true },
-];
 
 export default function EventsPage() {
   return (
@@ -21,21 +15,29 @@ export default function EventsPage() {
         <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 32 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={eyebrow}>EVENTS</div>
-            <h2 style={h2}>This month at Gofamint.</h2>
+            <h2 style={h2}>What is coming up.</h2>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {EVENTS.map((e) => (
+            {UPCOMING_EVENTS.map((event, index) => (
               <div
-                key={e.title}
-                style={{ display: "grid", gridTemplateColumns: "96px 1fr auto", gap: 16, alignItems: "baseline", padding: "20px 0", borderTop: "1px solid #e0e0e0", ...(e.last ? { borderBottom: "1px solid #e0e0e0" } : {}) }}
+                key={event.title}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "96px 1fr auto",
+                  gap: 16,
+                  alignItems: "baseline",
+                  padding: "20px 0",
+                  borderTop: "1px solid #e0e0e0",
+                  ...(index === UPCOMING_EVENTS.length - 1 ? { borderBottom: "1px solid #e0e0e0" } : {}),
+                }}
               >
-                <div style={{ fontSize: 15, color: "#7a7a7a" }}>{e.date}</div>
-                <div style={{ fontSize: 17, fontWeight: 600, color: "#1d1d1f" }}>{e.title}</div>
-                <div style={{ fontSize: 15, color: "#7a7a7a" }}>{e.time}</div>
+                <div style={{ fontSize: 15, color: "#7a7a7a" }}>{event.date}</div>
+                <div style={{ fontSize: 17, fontWeight: 600, color: "#1d1d1f" }}>{event.title}</div>
+                <div style={{ fontSize: 15, color: "#7a7a7a" }}>{event.time}</div>
               </div>
             ))}
           </div>
-          </div>
+        </div>
       </section>
       {/* the flyers, which belong with what is coming up rather than on the
           home page where they used to sit */}

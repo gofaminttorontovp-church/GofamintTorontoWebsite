@@ -34,11 +34,26 @@ const PATHS: Record<SocialIcon, React.ReactNode> = {
   ),
 };
 
+/**
+ * `on` names the surface the row sits on, not the colour of the marks. The
+ * circle and the glyph take their resting colours from it; both go to the
+ * brand's own colour and white on hover either way.
+ */
 export function SocialLinks({
   items,
   className,
+  on = "dark",
   ...props
-}: React.HTMLAttributes<HTMLUListElement> & { items: readonly SocialItem[] }) {
+}: React.HTMLAttributes<HTMLUListElement> & {
+  items: readonly SocialItem[];
+  on?: "light" | "dark";
+}) {
+  const circle =
+    on === "light"
+      ? "bg-black/[0.04] ring-black/10"
+      : "bg-white/10 ring-white/15";
+  const glyph =
+    on === "light" ? "text-[color:var(--ink-48)]" : "text-white/80";
   return (
     <ul className={cn("m-0 flex list-none items-center gap-3 p-0 md:gap-4", className)} {...props}>
       {items.map((item) => (
@@ -48,7 +63,10 @@ export function SocialLinks({
             aria-label={item.label}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15 transition-shadow duration-300 group-hover:shadow-lg md:h-12 md:w-12"
+            className={cn(
+              "relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full ring-1 transition-shadow duration-300 group-hover:shadow-lg md:h-12 md:w-12",
+              circle,
+            )}
           >
             <span
               aria-hidden
@@ -59,7 +77,10 @@ export function SocialLinks({
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden
-              className="relative z-10 h-5 w-5 text-white/80 transition-colors duration-300 group-hover:text-white md:h-6 md:w-6"
+              className={cn(
+                "relative z-10 h-5 w-5 transition-colors duration-300 group-hover:text-white md:h-6 md:w-6",
+                glyph,
+              )}
             >
               {PATHS[item.icon]}
             </svg>

@@ -157,8 +157,8 @@ export const ANNOUNCEMENTS = [
 ] as const;
 
 /* ------------------------------------------------------------------
-   Where and when to find us. One source, so the footer, the Visit page
-   and the connect section cannot drift apart the way they had.
+   Where and when to find us. One source, so nothing that quotes a time or
+   an address can drift from anything else that does.
    ------------------------------------------------------------------ */
 
 /** All times are Eastern. The note is stated once, beneath the list. */
@@ -204,4 +204,16 @@ export const SOCIALS = [
     href: "https://www.youtube.com/@gofamint-torontovp4833",
     color: "#FF0000",
   },
+] as const;
+
+/**
+ * Dated gatherings, newest first, for the list on the Events page.
+ *
+ * Only what we have a flyer for. The weekly rhythm is in SERVICE_TIMES and is
+ * not repeated here; this list is for the things that happen once. Add an
+ * entry as each new date is set, and drop it once it has passed.
+ */
+export const UPCOMING_EVENTS = [
+  { date: "Aug 29", title: "Shine: back to school", time: "10:00am" },
+  { date: "Sep 12", title: "National Men's Conference", time: "1:00pm" },
 ] as const;
