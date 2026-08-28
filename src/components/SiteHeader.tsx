@@ -53,51 +53,77 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
     setOpen(false);
   }, [pathname]);
 
+  /**
+   * Closing on tap, for the two header links that are hashes on the home page
+   * rather than routes of their own.
+   *
+   * The route-change effect above cannot close the menu for those: /#mission
+   * tapped from / leaves the pathname exactly where it was, so it never fires.
+   * And the scroll lock has to be released here, synchronously, rather than
+   * left to the effect a render later — the browser scrolls to the hash as the
+   * link is followed, and it will not scroll a body still pinned at
+   * overflow: hidden. Tapping Visit would close the menu onto an unmoved page.
+   * The effect sets the same empty value again on the next render, harmlessly.
+   */
+  const closeMenu = React.useCallback(() => {
+    document.body.style.overflow = "";
+    setOpen(false);
+  }, []);
+
   return (
-    <header
-      ref={headerRef}
-      className={cn(
-        // Black throughout — barely translucent, so what is behind warms it
-        // rather than greying it out. Only the shape changes on scroll, and
-        // that lives in .header-fluid, driven by --header-p.
-        "header-dark header-fluid bg-background/95 supports-[backdrop-filter]:bg-background/90 backdrop-blur-lg text-foreground",
-        "z-50 mx-auto w-full",
-        overlay ? "fixed inset-x-0 top-0" : "sticky top-0",
-      )}
-    >
-      <nav className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 md:h-12">
-        <Link href="/" className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Gofamint Toronto logo" className="h-9 w-9 object-contain" />
-          <span className="text-[20px] font-semibold tracking-normal text-foreground" style={{ fontFamily: "var(--font-display)" }}>
-            Gofamint Toronto
-          </span>
-        </Link>
+    /* The menu panel is a sibling of the header rather than a child of it,
+       and it has to stay that way. The header carries `backdrop-blur`, and an
+       element with a backdrop-filter becomes the containing block for any
+       `position: fixed` inside it — so nested, the panel's `top-14 bottom-0`
+       resolved against a 57px header instead of the viewport and it opened
+       two pixels tall with the links clipped out of sight. The menu looked
+       dead on every phone. */
+    <>
+      <header
+        ref={headerRef}
+        className={cn(
+          // Black throughout — barely translucent, so what is behind warms it
+          // rather than greying it out. Only the shape changes on scroll, and
+          // that lives in .header-fluid, driven by --header-p.
+          "header-dark header-fluid bg-background/95 supports-[backdrop-filter]:bg-background/90 backdrop-blur-lg text-foreground",
+          "z-50 mx-auto w-full",
+          overlay ? "fixed inset-x-0 top-0" : "sticky top-0",
+        )}
+      >
+        <nav className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 md:h-12">
+          <Link href="/" className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Gofamint Toronto logo" className="h-9 w-9 object-contain" />
+            <span className="text-[20px] font-semibold tracking-normal text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+              Gofamint Toronto
+            </span>
+          </Link>
 
-        <div className="hidden items-center gap-2 md:flex">
-          {HEADER_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              className={buttonVariants({
-                variant: "ghost",
-                className: pathname === link.href ? "font-semibold" : "text-foreground/70",
-              })}
-              href={link.href}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {HEADER_CTAS.map((cta) => (
-            <Button key={cta.href} variant={cta.variant} asChild>
-              <Link href={cta.href}>{cta.label}</Link>
-            </Button>
-          ))}
-        </div>
+          <div className="hidden items-center gap-2 md:flex">
+            {HEADER_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                className={buttonVariants({
+                  variant: "ghost",
+                  className: pathname === link.href ? "font-semibold" : "text-foreground/70",
+                })}
+                href={link.href}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {HEADER_CTAS.map((cta) => (
+              <Button key={cta.href} variant={cta.variant} asChild>
+                <Link href={cta.href}>{cta.label}</Link>
+              </Button>
+            ))}
+          </div>
 
-        <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
-          <MenuToggleIcon open={open} className="size-5" duration={300} />
-        </Button>
-      </nav>
+          <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
+            <MenuToggleIcon open={open} className="size-5" duration={300} />
+          </Button>
+        </nav>
+      </header>
 
       <div
         className={cn(
@@ -121,6 +147,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
                   className: cn("justify-start", pathname === link.href ? "font-semibold" : "text-foreground/70"),
                 })}
                 href={link.href}
+                onClick={closeMenu}
               >
                 {link.label}
               </Link>
@@ -129,12 +156,14 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           <div className="flex flex-col gap-2">
             {HEADER_CTAS.map((cta) => (
               <Button key={cta.href} variant={cta.variant} className="w-full" asChild>
-                <Link href={cta.href}>{cta.label}</Link>
+                <Link href={cta.href} onClick={closeMenu}>
+                  {cta.label}
+                </Link>
               </Button>
             ))}
           </div>
         </div>
       </div>
-    </header>
+    </>
   );
 }
