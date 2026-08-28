@@ -226,3 +226,77 @@ export const UPCOMING_EVENTS = [
     note: "Every Friday to December 25, in place of the Friday prayer meeting",
   },
 ] as const;
+
+/* ------------------------------------------------------------------
+   The groups, in the order the Groups page lists them: the pastor first,
+   then the choir, then the four ministries. Each carries the person who
+   leads it, except the choir, which is listed as the body it is.
+
+   The photographs are cropped square and, where the original had a
+   congregation or a street behind the subject, the background is blurred so
+   the person the row is about is the person you look at. `alt` describes the
+   picture; the name and the group are already in the markup beside it, so it
+   does not repeat them.
+
+   `role` is only carried where it says something the group heading does not.
+   Naming Pastor Israel "Men's Ministry" directly under a heading that already
+   reads MEN'S MINISTRY prints the same words twice, so those entries leave it
+   off and the heading does the work.
+   ------------------------------------------------------------------ */
+
+export const GROUPS = [
+  {
+    id: "pastor",
+    group: "Pastor",
+    name: "Pastor Sam Adusi",
+    role: "Head Pastor",
+    image: "/groups/pastor-sam-adusi.jpg",
+    alt: "Pastor Sam Adusi outdoors in a dark suit and red tie",
+    description:
+      "Pastor Samuel Adusi leads Gofamint Toronto and preaches on Sunday mornings. If you are visiting for the first time, or you would like someone to pray with you, ask for him.",
+  },
+  {
+    id: "choir",
+    group: "Choir",
+    image: "/groups/choir.jpg",
+    alt: "The choir gathered outside the church in blue",
+    description:
+      "The choir leads the singing on a Sunday morning, and at the conventions and conferences the church takes part in through the year. If you sing or play, say so after a service, and there is room.",
+  },
+  {
+    id: "men",
+    group: "Men's Ministry",
+    name: "Pastor Israel Sofolahan",
+    image: "/groups/pastor-israel-sofolahan.jpg",
+    alt: "Pastor Israel Sofolahan in a navy suit and gold tie",
+    description:
+      "The men meet to pray for one another and to talk plainly about work, marriage and fatherhood. Their largest gathering of the year is the National Men's Conference.",
+  },
+  {
+    id: "women",
+    group: "Women's Ministry",
+    name: "Deaconess Grace Adusi",
+    image: "/groups/deaconess-grace-adusi.jpg",
+    alt: "Deaconess Grace Adusi worshipping during a service",
+    description:
+      "The women pray for the church and look after the people in it, from the mother with a newborn to the sister who arrived in Toronto last month. Whatever season you are in, you are welcome.",
+  },
+  {
+    id: "youth",
+    group: "Youth",
+    name: "Sister Ebunoluwa",
+    image: "/groups/sister-ebunoluwa-sofolahan.jpg",
+    alt: "Sister Ebunoluwa outside the church on a bright afternoon",
+    description:
+      "Students and young adults, meeting to study together and to work out what following Christ looks like in a classroom and a first job. Some of it happens on Zoom, so distance is no reason to stay away.",
+  },
+  {
+    id: "children",
+    group: "Children's Ministry",
+    name: "Ms. Obadaki",
+    image: "/groups/ms-obadaki.jpg",
+    alt: "Ms. Obadaki in a grey blazer at the Gofamint Canada convention",
+    description:
+      "The children are taught on a Sunday in a way that is theirs, rather than a shortened version of what the adults are given. Bring them. They are expected, not merely tolerated.",
+  },
+] as const;

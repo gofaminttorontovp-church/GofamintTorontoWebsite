@@ -199,9 +199,14 @@
   display: none;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* No `scroll-behavior: smooth` on html, deliberately.
+   It was here to ease the jump to #mission and #connect, and it did the
+   opposite: with it set, the App Router's hash navigation set the address bar
+   and then never moved the page, so Visit and Learn About us landed a visitor
+   at the top of the home page every time, on a phone and on a laptop alike.
+   Taking it off restores the jump. It also settles a second thing, since the
+   rule had no prefers-reduced-motion guard and so moved the page for people
+   who have asked that it not. */
 
 body {
   margin: 0;
