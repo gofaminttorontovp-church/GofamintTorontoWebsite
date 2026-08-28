@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
-// Inter is the open-source substitute for SF Pro Display / SF Pro Text used
-// by the Gofamint Toronto design system. It backs both --font-display and
-// --font-text (see globals.css).
+// Inter carries the body text — the open-source substitute for SF Pro Text
+// used by the Gofamint Toronto design system. It backs --font-text.
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+// Cormorant Garamond carries the display voice: the headline, the wordmark,
+// the section titles. Loaded as its variable font, so every weight the design
+// asks for comes out of one file. See --font-display in globals.css.
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-cormorant",
   display: "swap",
 });
 
@@ -33,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
       <body>{children}</body>
     </html>
   );
