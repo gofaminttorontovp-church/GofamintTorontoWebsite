@@ -1,14 +1,16 @@
 import AnnouncementsSection from "@/components/AnnouncementsSection";
 import Hero from "@/components/Hero";
 import MissionSection from "@/components/MissionSection";
+import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
 /**
  * Home page — the scroll-driven hero, then the mission statements and the
- * announcements. The
- * About / Visit / Events content lives on its own routes under the (site)
- * route group. The header is the same one those pages use, passed `overlay`
- * so the hero can start at the very top of the document.
+ * announcements, closing on the same footer the content pages carry. Those
+ * pages live on their own routes under the (site) route group, which supplies
+ * their header and footer; the home page sits outside it and names both
+ * itself, passing the header `overlay` so the hero can start at the very top
+ * of the document.
  */
 export default function Home() {
   return (
@@ -19,6 +21,7 @@ export default function Home() {
       <section style={{ background: "#ffffff", height: 6 }} />
       <MissionSection />
       <AnnouncementsSection />
+      <SiteFooter />
     </>
   );
 }

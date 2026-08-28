@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { NAV_LINKS } from "@/lib/site";
 
-/** Shared black footer for the content pages. */
+/** Shared black footer, carried by every page including the home page. */
 export default function SiteFooter() {
   return (
     <footer style={{ background: "#000000", color: "#cccccc", padding: "48px 32px" }}>
@@ -13,7 +13,7 @@ export default function SiteFooter() {
         </Link>
         <div style={{ height: 1, background: "rgba(255, 255, 255, 0.15)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <div style={{ fontSize: 12, color: "#7a7a7a" }}>© 2026 Gofamint Toronto — The Gospel Faith Mission International</div>
+          <div style={{ fontSize: 12, color: "#7a7a7a" }}>© 2026 Gofamint Toronto, The Gospel Faith Mission International</div>
           <div style={{ display: "flex", gap: 24 }}>
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} style={{ fontSize: 12, color: "#cccccc" }}>
