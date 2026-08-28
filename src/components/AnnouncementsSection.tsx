@@ -93,7 +93,15 @@ export default function AnnouncementsSection() {
   }, [current, isWide]);
 
   return (
-    <section id="announcements" className="bg-[color:var(--canvas-parchment)] text-[color:var(--ink)]">
+    <section
+      id="announcements"
+      /* The flyers either side of the one on show are pushed out past the
+         card, and on a narrow screen that reached beyond the window and left
+         the whole page draggable sideways onto white. Clipped at the section
+         rather than at the card, so the neighbours still peek as intended;
+         `clip` rather than `hidden`, which would make this a scroll port. */
+      className="overflow-x-clip bg-[color:var(--canvas-parchment)] text-[color:var(--ink)]"
+    >
       <div className="mx-auto max-w-5xl px-6 py-24 md:py-32">
         <h2 className="text-center font-serif text-[40px] leading-tight md:text-5xl">
           Announcements

@@ -65,7 +65,10 @@ export function SocialLinks({
             </svg>
           </a>
           <span
-            className="pointer-events-none absolute bottom-[-38px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs text-white opacity-0 transition-all duration-300 ease-in-out group-hover:bottom-[-46px] group-hover:opacity-100"
+            /* Not rendered below md: a touch screen cannot hover, so the
+               tooltip could never show, and being transparent rather than
+               absent it still widened the page past the last icon. */
+            className="pointer-events-none absolute bottom-[-38px] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs text-white opacity-0 transition-all duration-300 ease-in-out group-hover:bottom-[-46px] group-hover:opacity-100 md:block"
             style={{ backgroundColor: item.color }}
           >
             {item.label}
