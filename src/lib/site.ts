@@ -148,3 +148,53 @@ export const ANNOUNCEMENTS = [
       "The anchor for the year: the Lord will perfect that which concerns me; your mercy, O Lord, endures forever; do not forsake the works of your hands.",
   },
 ] as const;
+
+/* ------------------------------------------------------------------
+   Where and when to find us. One source, so the footer, the Visit page
+   and the connect section cannot drift apart the way they had.
+   ------------------------------------------------------------------ */
+
+/** All times are Eastern. The note is stated once, beneath the list. */
+export const SERVICE_TIMES = [
+  { name: "Sunday Service", when: "Sundays, 10:00am", lead: true },
+  { name: "Morning Prayer", when: "Monday to Saturday, 6:15am" },
+  { name: "Bible Study", when: "Tuesdays, 7:00pm" },
+  { name: "Bible Study", when: "Fridays, 7:00pm" },
+] as const;
+
+export const LOCATION = {
+  lines: ["252 Eddystone Avenue", "Toronto, Ontario M3N 1H7"],
+  /** One line, for prose and for page descriptions. */
+  oneLine: "252 Eddystone Avenue, Toronto, Ontario M3N 1H7",
+  mapsUrl:
+    "https://www.google.com/maps/search/?api=1&query=252+Eddystone+Avenue+Toronto+Ontario+M3N+1H7",
+} as const;
+
+export const CONTACT = {
+  phone: "(437) 967-1540",
+  phoneHref: "tel:+14379671540",
+  email: "gofaminttorontovp@gmail.com",
+  emailHref: "mailto:gofaminttorontovp@gmail.com",
+} as const;
+
+/** The marks are drawn in the social-links component, keyed by `icon`. */
+export const SOCIALS = [
+  {
+    icon: "facebook",
+    label: "Facebook",
+    href: "https://www.facebook.com/GOFAMINTTORONTO",
+    color: "#1877F2",
+  },
+  {
+    icon: "instagram",
+    label: "Instagram",
+    href: "https://www.instagram.com/gofamint_toronto/",
+    color: "#E1306C",
+  },
+  {
+    icon: "youtube",
+    label: "YouTube",
+    href: "https://www.youtube.com/@gofamint-torontovp4833",
+    color: "#FF0000",
+  },
+] as const;

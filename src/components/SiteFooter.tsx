@@ -4,7 +4,7 @@ import { NAV_LINKS } from "@/lib/site";
 /** Shared black footer, carried by every page including the home page. */
 export default function SiteFooter() {
   return (
-    <footer style={{ background: "#000000", color: "#cccccc", padding: "48px 32px" }}>
+    <footer style={{ background: "var(--tile-dark-1)", color: "#cccccc", padding: "48px 32px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

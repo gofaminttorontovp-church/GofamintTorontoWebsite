@@ -1,4 +1,5 @@
 import AnnouncementsSection from "@/components/AnnouncementsSection";
+import ConnectSection from "@/components/ConnectSection";
 import Hero from "@/components/Hero";
 import MissionSection from "@/components/MissionSection";
 import SiteFooter from "@/components/SiteFooter";
@@ -21,6 +22,7 @@ export default function Home() {
       <section style={{ background: "#ffffff", height: 6 }} />
       <MissionSection />
       <AnnouncementsSection />
+      <ConnectSection />
       <SiteFooter />
     </>
   );

@@ -67,7 +67,7 @@ export default function AnnouncementsSection() {
   const showing = ANNOUNCEMENTS[current];
 
   return (
-    <section id="announcements" className="bg-white text-[color:var(--ink)]">
+    <section id="announcements" className="bg-[color:var(--canvas-parchment)] text-[color:var(--ink)]">
       <div className="mx-auto max-w-5xl px-6 py-24 md:py-32">
         <h2 className="text-center font-serif text-[40px] leading-tight md:text-5xl">
           Announcements
@@ -83,8 +83,8 @@ export default function AnnouncementsSection() {
         >
           {/* the wheel of names */}
           <div className="relative h-[240px] overflow-hidden md:h-[300px]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-white to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-[color:var(--canvas-parchment)] to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-[color:var(--canvas-parchment)] to-transparent" />
             <div className="relative flex h-full items-center justify-center md:justify-start">
               {ANNOUNCEMENTS.map((item, index) => {
                 const isActive = index === current;
