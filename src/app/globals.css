@@ -109,6 +109,20 @@
   --radius: var(--radius-md);
 }
 
+/* The header runs black once it condenses into its pill (and while the mobile
+   menu is open). Re-pointing the token layer on that one element is enough —
+   every shadcn utility inside it, surfaces and borders and buttons alike,
+   follows the override. Scrolled to the top the header is transparent, so it
+   keeps the light tokens and its ink text over the hero sky. */
+.header-dark {
+  --background: var(--surface-black);
+  --foreground: var(--on-dark);
+  --ui-accent: rgba(255, 255, 255, 0.12);
+  --ui-accent-foreground: var(--on-dark);
+  --border: rgba(255, 255, 255, 0.14);
+  --input: rgba(255, 255, 255, 0.22);
+}
+
 /* Expose the token layer to Tailwind as colour utilities (bg-background,
    border-border, text-primary-foreground, …). */
 @theme inline {

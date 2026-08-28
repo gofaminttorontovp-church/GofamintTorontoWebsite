@@ -26,6 +26,8 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = React.useState(false);
   const scrolled = useScroll(10);
   const pathname = usePathname();
+  // Black once it has a surface of its own; ink-on-sky while transparent.
+  const dark = scrolled || open;
 
   React.useEffect(() => {
     if (open) {
@@ -50,12 +52,15 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   return (
     <header
       className={cn(
-        "z-50 mx-auto w-full max-w-5xl border-b border-transparent md:rounded-md md:border md:border-transparent md:transition-all md:ease-out",
+        "z-50 mx-auto w-full max-w-5xl border-b border-transparent text-foreground md:rounded-md md:border md:border-transparent md:transition-all md:ease-out",
         overlay ? "fixed inset-x-0 top-0" : "sticky top-0",
+        dark && "header-dark",
         {
-          "bg-background/95 supports-[backdrop-filter]:bg-background/50 border-border md:border-border backdrop-blur-lg md:top-4 md:max-w-4xl md:shadow":
+          // Barely translucent: enough for the sky to warm the black, not
+          // enough to turn it grey.
+          "bg-background/95 supports-[backdrop-filter]:bg-background/90 border-border md:border-border backdrop-blur-lg md:top-4 md:max-w-4xl md:shadow":
             scrolled && !open,
-          "bg-background/90": open,
+          "bg-background/95": open,
         },
       )}
     >
@@ -81,7 +86,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
               key={link.href}
               className={buttonVariants({
                 variant: "ghost",
-                className: pathname === link.href ? "text-primary" : undefined,
+                className: pathname === link.href ? "font-semibold" : "text-foreground/70",
               })}
               href={link.href}
             >
@@ -119,7 +124,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
                 key={link.href}
                 className={buttonVariants({
                   variant: "ghost",
-                  className: cn("justify-start", pathname === link.href && "text-primary"),
+                  className: cn("justify-start", pathname === link.href ? "font-semibold" : "text-foreground/70"),
                 })}
                 href={link.href}
               >
