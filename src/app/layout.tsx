@@ -1,38 +1,23 @@
 import type { Metadata } from "next";
-import {
-  Inter,
-  Fraunces,
-  Cormorant_Garamond,
-  Playfair_Display,
-  Marcellus,
-  Instrument_Serif,
-} from "next/font/google";
-import DisplayFontSwitch from "@/components/DisplayFontSwitch";
+import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
-// Inter is the open-source substitute for SF Pro Display / SF Pro Text used
-// by the Gofamint Toronto design system. It backs both --font-display and
-// --font-text (see globals.css).
+// Inter carries the body text — the open-source substitute for SF Pro Text
+// used by the Gofamint Toronto design system. It backs --font-text.
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
-// Display faces on trial, reachable with ?font= while developing. Declared
-// without preloading, so a browser only fetches one if something actually asks
-// for it — nothing extra is downloaded on a normal visit. next/font needs
-// these spelled out literally, hence the repetition. Once a face is chosen,
-// the rest of these come out.
-const fraunces = Fraunces({ subsets: ["latin"], display: "swap", preload: false, variable: "--font-fraunces" });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], display: "swap", preload: false, weight: ["400", "600", "700"], variable: "--font-cormorant" });
-const playfair = Playfair_Display({ subsets: ["latin"], display: "swap", preload: false, variable: "--font-playfair" });
-const marcellus = Marcellus({ subsets: ["latin"], display: "swap", preload: false, weight: "400", variable: "--font-marcellus" });
-const instrument = Instrument_Serif({ subsets: ["latin"], display: "swap", preload: false, weight: "400", variable: "--font-instrument" });
-
-const fontVariables = [inter, fraunces, cormorant, playfair, marcellus, instrument]
-  .map((f) => f.variable)
-  .join(" ");
+// Cormorant Garamond carries the display voice: the headline, the wordmark,
+// the section titles. Loaded as its variable font, so every weight the design
+// asks for comes out of one file. See --font-display in globals.css.
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -56,11 +41,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={fontVariables}>
-      <body>
-        <DisplayFontSwitch />
-        {children}
-      </body>
+    <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

@@ -9,7 +9,7 @@ export default function SiteFooter() {
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="" style={{ width: 36, height: 36, objectFit: "contain" }} />
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, color: "#ffffff" }}>Gofamint Toronto</span>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 600, color: "#ffffff" }}>Gofamint Toronto</span>
         </Link>
         <div style={{ height: 1, background: "rgba(255, 255, 255, 0.15)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>

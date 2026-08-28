@@ -15,7 +15,7 @@ export default function Home() {
       <Hero />
       <section style={{ background: "#ffffff", height: 6 }} />
       <section style={{ background: "#281068", padding: "100px 32px", textAlign: "center" }}>
-        <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, letterSpacing: "-0.01em", color: "#ffffff" }}>
+        <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 46, fontWeight: 600, letterSpacing: "0", color: "#ffffff" }}>
           More to come
         </p>
       </section>

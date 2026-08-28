@@ -34,9 +34,9 @@ export const eyebrow: CSSProperties = {
 export const h2: CSSProperties = {
   margin: 0,
   fontFamily: "var(--font-display)",
-  fontSize: 40,
+  fontSize: 46,
   fontWeight: 600,
-  letterSpacing: "-0.01em",
+  letterSpacing: "0",
   color: "#1d1d1f",
 };
 
@@ -96,30 +96,3 @@ export const HERO_TREATMENTS = {
     ink: "#1d1d1f",
   },
 } as const satisfies Record<HeroTreatment, { base: string; filter?: string; veil: string; ink: string }>;
-
-/* ------------------------------------------------------------------
-   Display face — the headline, the wordmark, the section titles.
-   ------------------------------------------------------------------ */
-
-/**
- * Candidates to try on, each loaded in the root layout under its own CSS
- * variable. `?font=` picks one while developing, the same way `?bg=` picks a
- * backdrop; the page otherwise wears DISPLAY_FONT. Once one is chosen the
- * others should come out of the layout rather than linger.
- *
- * Sanctuary and Fellowship are not here because they are not Google fonts —
- * they would need licensed files and next/font/local.
- */
-export const DISPLAY_FONTS = {
-  inter: "--font-inter",
-  fraunces: "--font-fraunces",
-  cormorant: "--font-cormorant",
-  playfair: "--font-playfair",
-  marcellus: "--font-marcellus",
-  instrument: "--font-instrument",
-} as const;
-
-export type DisplayFont = keyof typeof DISPLAY_FONTS;
-
-/** Which face the site wears. */
-export const DISPLAY_FONT: DisplayFont = "inter";

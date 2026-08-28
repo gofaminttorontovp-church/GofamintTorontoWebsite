@@ -69,7 +69,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
         <Link href="/" className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Gofamint Toronto logo" className="h-9 w-9 object-contain" />
-          <span className="text-[17px] font-semibold tracking-[-0.01em] text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+          <span className="text-[20px] font-semibold tracking-normal text-foreground" style={{ fontFamily: "var(--font-display)" }}>
             Gofamint Toronto
           </span>
         </Link>
