@@ -40,7 +40,7 @@ export function SocialLinks({
   ...props
 }: React.HTMLAttributes<HTMLUListElement> & { items: readonly SocialItem[] }) {
   return (
-    <ul className={cn("m-0 flex list-none items-center gap-4 p-0", className)} {...props}>
+    <ul className={cn("m-0 flex list-none items-center gap-3 p-0 md:gap-4", className)} {...props}>
       {items.map((item) => (
         <li key={item.label} className="group relative">
           <a
@@ -48,7 +48,7 @@ export function SocialLinks({
             aria-label={item.label}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15 transition-shadow duration-300 group-hover:shadow-lg"
+            className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15 transition-shadow duration-300 group-hover:shadow-lg md:h-12 md:w-12"
           >
             <span
               aria-hidden
@@ -59,7 +59,7 @@ export function SocialLinks({
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden
-              className="relative z-10 h-6 w-6 text-white/80 transition-colors duration-300 group-hover:text-white"
+              className="relative z-10 h-5 w-5 text-white/80 transition-colors duration-300 group-hover:text-white md:h-6 md:w-6"
             >
               {PATHS[item.icon]}
             </svg>

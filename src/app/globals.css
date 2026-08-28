@@ -189,6 +189,16 @@
   box-sizing: border-box;
 }
 
+/* Rows that scroll sideways on a phone: the swipe is the affordance, and a
+   scrollbar sitting under the content is only noise at that size. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 html {
   scroll-behavior: smooth;
 }

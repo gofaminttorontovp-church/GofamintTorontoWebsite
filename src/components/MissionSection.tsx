@@ -6,6 +6,9 @@ import Image from "next/image";
  * Ported from the reference about section, with its emoji icons dropped for
  * numerals and its palette inverted: black behind white type, so the top of
  * the page carries the same weight as the header and footer that bracket it.
+ *
+ * On a phone the three statements are swiped through rather than scrolled
+ * past, which is the difference between one screen and three.
  */
 
 const STATEMENTS = [
@@ -57,9 +60,11 @@ export default function MissionSection() {
             </figcaption>
           </figure>
 
-          <ol className="m-0 list-none space-y-12 p-0">
+          {/* Sideways on a phone, where three stacked statements cost a
+              screen and a half of scrolling; a column again from md up. */}
+          <ol className="no-scrollbar -mx-6 m-0 flex snap-x snap-mandatory scroll-pl-6 list-none gap-5 overflow-x-auto px-6 pb-2 md:mx-0 md:block md:snap-none md:space-y-12 md:overflow-visible md:p-0">
             {STATEMENTS.map((statement) => (
-              <li key={statement.number}>
+              <li key={statement.number} className="w-[78%] shrink-0 snap-start md:w-auto">
                 <span className="block text-sm font-semibold tracking-[0.2em] text-[var(--brand-red)]">
                   {statement.number}
                 </span>

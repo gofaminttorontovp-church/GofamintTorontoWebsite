@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { ANNOUNCEMENTS } from "@/lib/site";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 /**
  * The announcements, turning through the flyers one at a time.
@@ -16,8 +17,9 @@ import { ANNOUNCEMENTS } from "@/lib/site";
  * it, where it would have covered the very text it describes. The chips carry
  * names alone, so the two icon packages the reference wanted are not here.
  *
- * The wheel advances on its own and stops while the pointer is on it, so a
- * flyer being read is never pulled away.
+ * The wheel advances on its own and stops while a pointer rests on it, so a
+ * flyer being read is never pulled away. Only where hovering is real: a touch
+ * screen would otherwise pause it on a tap and never resume.
  */
 
 const AUTO_PLAY_MS = 5000;
@@ -32,6 +34,15 @@ const wrap = (min: number, max: number, v: number) => {
 export default function AnnouncementsSection() {
   const [step, setStep] = useState(0);
   const [paused, setPaused] = useState(false);
+  // The wheel is a vertical column of names beside the flyer on a laptop. A
+  // phone has no width to spare for that, so the names go under the flyer as
+  // a row that swipes, and the section costs one screen instead of two.
+  const isWide = useMediaQuery("(min-width: 768px)");
+  // Only a real pointer can hover. A touch screen fires mouseenter on a tap
+  // and has no matching mouseleave, which would have stopped the wheel for
+  // good the first time someone chose a flyer on a phone.
+  const canHover = useMediaQuery("(hover: hover)");
+  const stripRef = React.useRef<HTMLDivElement>(null);
   const count = ANNOUNCEMENTS.length;
   const current = ((step % count) + count) % count;
 
@@ -66,6 +77,21 @@ export default function AnnouncementsSection() {
 
   const showing = ANNOUNCEMENTS[current];
 
+  // Keep the chosen name in view as the row advances on its own.
+  useEffect(() => {
+    if (isWide) return;
+    const strip = stripRef.current;
+    // By the chip's own button: the row also holds the two gradient overlays
+    // the wheel needs on a laptop, so an index into children is not the index
+    // into the announcements.
+    const chip = strip?.querySelectorAll("button")[current]?.parentElement;
+    if (!strip || !chip) return;
+    strip.scrollTo({
+      left: chip.offsetLeft - (strip.clientWidth - chip.clientWidth) / 2,
+      behavior: "smooth",
+    });
+  }, [current, isWide]);
+
   return (
     <section id="announcements" className="bg-[color:var(--canvas-parchment)] text-[color:var(--ink)]">
       <div className="mx-auto max-w-5xl px-6 py-24 md:py-32">
@@ -77,50 +103,58 @@ export default function AnnouncementsSection() {
         </p>
 
         <div
-          className="mt-14 grid gap-10 md:mt-16 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-center md:gap-14"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
+          className="mt-12 flex flex-col gap-8 md:mt-16 md:grid md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-center md:gap-14"
+          onMouseEnter={() => canHover && setPaused(true)}
+          onMouseLeave={() => canHover && setPaused(false)}
         >
-          {/* the wheel of names */}
-          <div className="relative h-[240px] overflow-hidden md:h-[300px]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-[color:var(--canvas-parchment)] to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-[color:var(--canvas-parchment)] to-transparent" />
-            <div className="relative flex h-full items-center justify-center md:justify-start">
-              {ANNOUNCEMENTS.map((item, index) => {
-                const isActive = index === current;
-                const distance = wrap(-(count / 2), count / 2, index - current);
-                return (
-                  <motion.div
-                    key={item.id}
-                    style={{ height: ITEM_HEIGHT, width: "fit-content" }}
-                    animate={{
-                      y: distance * ITEM_HEIGHT,
-                      opacity: 1 - Math.abs(distance) * 0.3,
-                    }}
-                    transition={{ type: "spring", stiffness: 90, damping: 22, mass: 1 }}
-                    className="absolute flex items-center"
+          {/* the names: a wheel beside the flyer on a laptop, a row beneath it
+              on a phone. Same buttons either way, so nothing is duplicated for
+              a screen reader to read twice. */}
+          <div
+            ref={stripRef}
+            className={cn(
+              "no-scrollbar order-2 -mx-6 flex snap-x snap-mandatory scroll-pl-6 gap-3 overflow-x-auto px-6 pb-1",
+              "md:order-none md:mx-0 md:h-[300px] md:snap-none md:flex-col md:overflow-hidden md:px-0",
+              "md:relative md:items-start md:justify-center",
+            )}
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-16 bg-gradient-to-b from-[color:var(--canvas-parchment)] to-transparent md:block" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 hidden h-16 bg-gradient-to-t from-[color:var(--canvas-parchment)] to-transparent md:block" />
+            {ANNOUNCEMENTS.map((item, index) => {
+              const isActive = index === current;
+              const distance = wrap(-(count / 2), count / 2, index - current);
+              return (
+                <motion.div
+                  key={item.id}
+                  style={isWide ? { height: ITEM_HEIGHT, width: "fit-content" } : undefined}
+                  animate={
+                    isWide
+                      ? { y: distance * ITEM_HEIGHT, opacity: 1 - Math.abs(distance) * 0.3, x: 0 }
+                      : { y: 0, x: 0, opacity: 1 }
+                  }
+                  transition={{ type: "spring", stiffness: 90, damping: 22, mass: 1 }}
+                  className="flex shrink-0 snap-start items-center md:absolute"
+                >
+                  <button
+                    type="button"
+                    onClick={() => goTo(index)}
+                    aria-current={isActive}
+                    className={cn(
+                      "rounded-full border px-5 py-2.5 text-left text-sm tracking-tight whitespace-nowrap transition-colors duration-200 md:px-6 md:py-3 md:text-[15px]",
+                      isActive
+                        ? "border-black bg-black text-white"
+                        : "border-[color:var(--hairline)] bg-transparent text-[color:var(--ink-48)] hover:border-black/40 hover:text-[color:var(--ink)]",
+                    )}
                   >
-                    <button
-                      type="button"
-                      onClick={() => goTo(index)}
-                      aria-current={isActive}
-                      className={cn(
-                        "rounded-full border px-6 py-3 text-left text-sm tracking-tight whitespace-nowrap transition-colors duration-200 md:text-[15px]",
-                        isActive
-                          ? "border-black bg-black text-white"
-                          : "border-[color:var(--hairline)] bg-transparent text-[color:var(--ink-48)] hover:border-black/40 hover:text-[color:var(--ink)]",
-                      )}
-                    >
-                      {item.label}
-                    </button>
-                  </motion.div>
-                );
-              })}
-            </div>
+                    {item.label}
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* the flyers */}
-          <div>
+          <div className="order-1 md:order-none">
             <div className="relative h-[380px] w-full md:h-[500px]">
               {ANNOUNCEMENTS.map((item, index) => {
                 const place = placeOf(index);
