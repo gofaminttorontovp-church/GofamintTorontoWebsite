@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import LightShaftBackground from "@/components/LightShaftBackground";
+import HeroBackdrop from "@/components/HeroBackdrop";
+import { HERO_BACKDROP, HERO_TREATMENTS } from "@/lib/site";
 
 /**
  * Scroll-driven hero, ported from the Gofamint Toronto design.
@@ -469,6 +470,7 @@ export default function Hero() {
   const welcomeOpacity = Math.max(1 - fade(A, 255, 310), fade(A, 470, 496));
   const line1Opacity = fade(A, 400, 430);
   const line1Rise = (1 - fade(A, 400, 430)) * 20;
+  const { ink, base } = HERO_TREATMENTS[HERO_BACKDROP];
   const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
   const caretWLeft = (pT * 100).toFixed(2) + "%";
   let caretWOpacity = 0;
@@ -477,10 +479,10 @@ export default function Hero() {
   return (
     <div ref={heroRef} id="top" style={{ height: `${SCROLL_LENGTH_VH}vh`, position: "relative", background: "#7EC8EF" }}>
       <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
-        <LightShaftBackground />
+        <HeroBackdrop treatment={HERO_BACKDROP} />
 
         {/* the sky settles into the logo's deep indigo at the base */}
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: "linear-gradient(to bottom, rgba(40, 16, 104, 0) 0%, rgba(40, 16, 104, 0.45) 60%, #281068 100%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: `linear-gradient(to bottom, rgba(${base}, 0) 0%, rgba(${base}, 0.45) 60%, rgb(${base}) 100%)`, pointerEvents: "none" }} />
 
         {/* the red line, drawn by scroll: enters above the headline and dives under it */}
         {ready && (
@@ -512,7 +514,7 @@ export default function Hero() {
 
         {/* centered title lockup — bows out as the dove takes flight */}
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: welcomeOpacity }}>
-          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "clamp(40px, 6.5vw, 84px)", fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.1, color: "#1d1d1f", textAlign: "center", padding: "0 16px" }}>Welcome to Gofamint</h1>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "clamp(40px, 6.5vw, 84px)", fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.1, color: ink, textAlign: "center", padding: "0 16px" }}>Welcome to Gofamint</h1>
           <div ref={trowRef} style={{ position: "relative", marginTop: 4, padding: "0 16px" }}>
             {/* invisible sizing copy keeps the layout stable */}
             <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(40px, 6.5vw, 84px)", fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.15, visibility: "hidden" }}>Toronto</div>
@@ -529,7 +531,7 @@ export default function Hero() {
             that types "The Word" at the end of the sentence. Always rendered
             (opacity-driven) so measure() can find it. */}
         <div style={{ position: "absolute", left: 0, right: 0, top: "66%", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "baseline", columnGap: "0.4em", rowGap: 6, zIndex: 2, textAlign: "center", padding: "0 16px", pointerEvents: "none", fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.8vw, 52px)", letterSpacing: "-0.012em", lineHeight: 1.15 }}>
-          <span style={{ fontWeight: 600, color: "#1d1d1f", opacity: line1Opacity, transform: `translateY(${line1Rise.toFixed(1)}px)` }}>We Teach, Preach and Live</span>
+          <span style={{ fontWeight: 600, color: ink, opacity: line1Opacity, transform: `translateY(${line1Rise.toFixed(1)}px)` }}>We Teach, Preach and Live</span>
           <span ref={twRef} style={{ position: "relative", fontWeight: 700 }}>
             {/* invisible sizing copy keeps the layout stable */}
             <span style={{ visibility: "hidden" }}>The Word</span>

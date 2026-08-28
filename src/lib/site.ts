@@ -39,3 +39,66 @@ export const h2: CSSProperties = {
   letterSpacing: "-0.01em",
   color: "#1d1d1f",
 };
+
+/* ------------------------------------------------------------------
+   Hero backdrop — the surface behind the headline and the drawn line.
+   ------------------------------------------------------------------ */
+
+export type HeroTreatment = "shafts" | "photo" | "mono" | "dark";
+
+/**
+ * Which one the home page wears. Change this line to compare them.
+ *
+ * Held at "shafts" — the original sky — until the skyline photograph is
+ * licensed and in /public, so the page never ships a stand-in.
+ */
+export const HERO_BACKDROP: HeroTreatment = "shafts";
+
+/**
+ * The skyline photograph. `flip` mirrors it horizontally — the aerial shot
+ * has the CN tower on the left, and the headline wants that side clear.
+ * `position` is the object-position, biased so the tower survives the crop
+ * on a narrow screen.
+ */
+export const HERO_PHOTO = {
+  // Stand-in until the skyline photograph is licensed and dropped into
+  // /public: point this at "/skyline.jpg" and the treatments below apply to
+  // it unchanged. cn-tower.jpg is a portrait shot, so it crops hard here.
+  src: "/cn-tower.jpg",
+  flip: false,
+  position: "center 40%",
+};
+
+/**
+ * Per-treatment surface. `filter` works the photograph itself; `veil` is the
+ * wash laid over it; `ink` is the colour the headline and closing line take,
+ * since a night sky and a dusk sky do not want the same type; `base` is the
+ * colour the foot of the hero settles into on its way to the next section —
+ * the logo's indigo for the colour treatments, neutral for the grayscale one.
+ */
+export const HERO_TREATMENTS = {
+  photo: {
+    base: "40, 16, 104",
+    filter: "saturate(1.05)",
+    veil: "linear-gradient(to bottom, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.34) 45%, rgba(255, 255, 255, 0.12) 100%)",
+    ink: "#1d1d1f",
+  },
+  mono: {
+    base: "24, 24, 27",
+    filter: "grayscale(1) contrast(1.08) brightness(1.04)",
+    veil: "linear-gradient(to bottom, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 100%)",
+    ink: "#1d1d1f",
+  },
+  dark: {
+    base: "40, 16, 104",
+    filter: "saturate(0.6) brightness(0.42)",
+    veil: "linear-gradient(to bottom, rgba(40, 16, 104, 0.5) 0%, rgba(40, 16, 104, 0.35) 45%, rgba(40, 16, 104, 0.55) 100%)",
+    ink: "#ffffff",
+  },
+  shafts: {
+    base: "40, 16, 104",
+    filter: undefined,
+    veil: "transparent",
+    ink: "#1d1d1f",
+  },
+} as const satisfies Record<HeroTreatment, { base: string; filter?: string; veil: string; ink: string }>;
