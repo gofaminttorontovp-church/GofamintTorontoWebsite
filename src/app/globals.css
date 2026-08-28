@@ -109,6 +109,42 @@
   --radius: var(--radius-md);
 }
 
+/* The header's shape is scroll-linked. --header-p runs 0 → 1 over the first
+   stretch of the page (set per frame by useScrollProgress), and every property
+   that separates the full-width top bar from the floating pill interpolates
+   across it — so the change reads as one continuous movement instead of a
+   switch thrown at a threshold. Below md the bar keeps its full width and none
+   of this applies. These rules sit outside Tailwind's layers, so they win over
+   the utility classes (top-0, px-4) that hold the untravelled state. */
+.header-fluid {
+  --header-p: 0;
+  border-bottom: 1px solid transparent;
+}
+
+@media (min-width: 768px) {
+  .header-fluid {
+    max-width: calc(100% - (100% - 56rem) * var(--header-p));
+    top: calc(1rem * var(--header-p));
+    border: 1px solid rgba(255, 255, 255, calc(0.14 * var(--header-p)));
+    border-radius: calc(var(--radius-md) * var(--header-p));
+    box-shadow:
+      0 1px 3px 0 rgba(0, 0, 0, calc(0.1 * var(--header-p))),
+      0 1px 2px -1px rgba(0, 0, 0, calc(0.1 * var(--header-p)));
+    /* A short trail so a coarse wheel notch still arrives as a glide. */
+    transition:
+      max-width 120ms ease-out,
+      top 120ms ease-out,
+      border-radius 120ms ease-out,
+      border-color 120ms ease-out,
+      box-shadow 120ms ease-out;
+  }
+
+  .header-fluid > nav {
+    padding-inline: calc(1rem - 0.5rem * var(--header-p));
+    transition: padding-inline 120ms ease-out;
+  }
+}
+
 /* The header runs black. Re-pointing the token layer on that one element is
    enough — every shadcn utility inside it, surfaces and borders and buttons
    alike, follows the override, so the component itself needs no dark variant

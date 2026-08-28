@@ -5,17 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
-import { useScroll } from "@/components/ui/use-scroll";
+import { useScrollProgress } from "@/components/ui/use-scroll-progress";
 import { cn } from "@/lib/utils";
 import { HEADER_CTAS, HEADER_LINKS } from "@/lib/site";
+
+/** How far the page travels while the top bar draws in to its pill, in px. */
+const SHRINK_DISTANCE = 140;
 
 /**
  * The site header, shared by every page including the home hero.
  *
  * It is black throughout — a full-bleed bar across the top of the page that
- * condenses into a floating pill once scrolled: narrower, rounded, and lifted
- * off the top edge on desktop. On phones it stays a full-width bar and opens
- * a full-screen menu.
+ * condenses into a floating pill as you scroll: narrower, rounded, and lifted
+ * off the top edge on desktop, each of those interpolated across the first
+ * SHRINK_DISTANCE pixels rather than switched at a threshold. On phones it
+ * stays a full-width bar and opens a full-screen menu.
  *
  * `overlay` takes the header out of the flow so the page beneath starts at
  * the very top of the viewport — the home page needs that, since the hero
@@ -24,8 +28,10 @@ import { HEADER_CTAS, HEADER_LINKS } from "@/lib/site";
  */
 export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = React.useState(false);
-  const scrolled = useScroll(10);
   const pathname = usePathname();
+  // The pill forms over the first stretch of the page rather than at a
+  // threshold; the hook feeds the progress straight to CSS.
+  const headerRef = useScrollProgress<HTMLElement>(SHRINK_DISTANCE);
 
   React.useEffect(() => {
     if (open) {
@@ -49,26 +55,17 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <header
+      ref={headerRef}
       className={cn(
         // Black throughout — barely translucent, so what is behind warms it
-        // rather than greying it out. Only the shape changes on scroll.
-        "header-dark bg-background/95 supports-[backdrop-filter]:bg-background/90 backdrop-blur-lg text-foreground",
-        "z-50 mx-auto w-full border-b border-transparent md:border md:border-transparent md:transition-all md:ease-out",
+        // rather than greying it out. Only the shape changes on scroll, and
+        // that lives in .header-fluid, driven by --header-p.
+        "header-dark header-fluid bg-background/95 supports-[backdrop-filter]:bg-background/90 backdrop-blur-lg text-foreground",
+        "z-50 mx-auto w-full",
         overlay ? "fixed inset-x-0 top-0" : "sticky top-0",
-        {
-          "border-border md:top-4 md:max-w-4xl md:rounded-md md:border-border md:shadow":
-            scrolled && !open,
-        },
       )}
     >
-      <nav
-        className={cn(
-          "mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 md:h-12 md:transition-all md:ease-out",
-          {
-            "md:px-2": scrolled,
-          },
-        )}
-      >
+      <nav className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 md:h-12">
         <Link href="/" className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Gofamint Toronto logo" className="h-9 w-9 object-contain" />
