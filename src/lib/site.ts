@@ -261,7 +261,7 @@ export const GROUPS = [
     image: "/groups/choir.jpg",
     alt: "The choir gathered outside the church in blue",
     description:
-      "The choir leads the singing on a Sunday morning, and at the conventions and conferences the church takes part in through the year. If you sing or play, say so after a service — there is room.",
+      "The choir leads the singing on a Sunday morning, and at the conventions and conferences the church takes part in through the year. If you sing or play, say so after a service, and there is room.",
   },
   {
     id: "men",
@@ -297,6 +297,6 @@ export const GROUPS = [
     image: "/groups/ms-obadaki.jpg",
     alt: "Ms. Obadaki in a grey blazer at the Gofamint Canada convention",
     description:
-      "The children are taught on a Sunday in a way that is theirs, rather than a shortened version of what the adults are given. Bring them — they are expected, not merely tolerated.",
+      "The children are taught on a Sunday in a way that is theirs, rather than a shortened version of what the adults are given. Bring them. They are expected, not merely tolerated.",
   },
 ] as const;
