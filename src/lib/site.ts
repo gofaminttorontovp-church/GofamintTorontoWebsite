@@ -47,7 +47,7 @@ export const h2: CSSProperties = {
 export type HeroTreatment = "shafts" | "photo" | "mono" | "dark";
 
 /** Which one the home page wears. Change this line to compare them. */
-export const HERO_BACKDROP: HeroTreatment = "photo";
+export const HERO_BACKDROP: HeroTreatment = "dark";
 
 /**
  * The skyline photograph. `flip` mirrors it horizontally — the aerial shot
