@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import HeroBackdrop from "@/components/HeroBackdrop";
-import { HERO_BACKDROP, HERO_TREATMENTS } from "@/lib/site";
+import { HERO_TREATMENTS } from "@/lib/site";
+import { useHeroTreatment } from "@/lib/use-hero-treatment";
 
 /**
  * Scroll-driven hero, ported from the Gofamint Toronto design.
@@ -140,6 +141,7 @@ export default function Hero() {
   const trowRef = useRef<HTMLDivElement>(null);
   const twRef = useRef<HTMLSpanElement>(null);
 
+  const treatment = useHeroTreatment();
   const [p, setP] = useState(0);
   const [anim, setAnim] = useState(0); // Act 2 virtual clock; 0 = not started
   const [paths, setPaths] = useState<PathState>({
@@ -470,7 +472,7 @@ export default function Hero() {
   const welcomeOpacity = Math.max(1 - fade(A, 255, 310), fade(A, 470, 496));
   const line1Opacity = fade(A, 400, 430);
   const line1Rise = (1 - fade(A, 400, 430)) * 20;
-  const { ink, base } = HERO_TREATMENTS[HERO_BACKDROP];
+  const { ink, base } = HERO_TREATMENTS[treatment];
   const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
   const caretWLeft = (pT * 100).toFixed(2) + "%";
   let caretWOpacity = 0;
@@ -479,7 +481,7 @@ export default function Hero() {
   return (
     <div ref={heroRef} id="top" style={{ height: `${SCROLL_LENGTH_VH}vh`, position: "relative", background: "#7EC8EF" }}>
       <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
-        <HeroBackdrop treatment={HERO_BACKDROP} />
+        <HeroBackdrop treatment={treatment} />
 
         {/* the sky settles into the logo's deep indigo at the base */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: `linear-gradient(to bottom, rgba(${base}, 0) 0%, rgba(${base}, 0.22) 62%, rgb(${base}) 100%)`, pointerEvents: "none" }} />
