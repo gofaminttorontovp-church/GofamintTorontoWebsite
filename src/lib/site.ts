@@ -99,7 +99,9 @@ export const HERO_TREATMENTS = {
 
 /* ------------------------------------------------------------------
    Announcements — the flyers the carousel on the home page turns through.
-   Add an entry here and it appears; the section reads the length.
+   Add an entry here and it appears; the section reads the length. The pixel
+   dimensions are carried alongside each poster because the card is cut to the
+   shape of its own flyer, with no margin around it.
    Poster files are referenced with their exact case, which matters on the
    Linux filesystem that builds the deploy even though macOS forgives it.
    ------------------------------------------------------------------ */
@@ -109,6 +111,8 @@ export const ANNOUNCEMENTS = [
     id: "august",
     label: "August Declaration",
     image: "/august_declaration.jpeg",
+    width: 1646,
+    height: 2048,
     title: "August, Our Month of Glorious Jubilation",
     detail:
       "The declaration over the month, given by Pastor (Dr.) Elijah O. Abina, General Overseer of The Gospel Faith Mission International.",
@@ -117,6 +121,8 @@ export const ANNOUNCEMENTS = [
     id: "youth",
     label: "Youth: Back to School",
     image: "/youth.JPG",
+    width: 1364,
+    height: 2047,
     title: "Shine: Lights in the Classroom and Workplace",
     detail:
       "Back to school prayers and blessings with Gofamint Toronto Youth, on Matthew 5:14 to 16. August 29, 2026 at 10:00am EST, on Zoom. Meeting ID 807 789 4699.",
@@ -125,6 +131,8 @@ export const ANNOUNCEMENTS = [
     id: "mens",
     label: "Men's Conference",
     image: "/mens.jpg",
+    width: 1079,
+    height: 960,
     title: "The Mandate of a Kingdom Man",
     detail:
       "The 2nd Annual National Men's Conference, on Romans 12:11, with Pastor Sam Adusi and Pastor Adeyemi Sofolahan. Saturday, September 12, 2026 from 1:00pm to 4:00pm EST, on Zoom. Meeting ID 697 148 1978.",
@@ -133,6 +141,8 @@ export const ANNOUNCEMENTS = [
     id: "year",
     label: "Our Year of Good Success",
     image: "/Year_2026.jpg",
+    width: 2048,
+    height: 1241,
     title: "Our Year of Good Success",
     detail:
       "The anchor for the year: the Lord will perfect that which concerns me; your mercy, O Lord, endures forever; do not forsake the works of your hands.",

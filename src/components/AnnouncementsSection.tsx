@@ -10,8 +10,9 @@ import { ANNOUNCEMENTS } from "@/lib/site";
  * The announcements, turning through the flyers one at a time.
  *
  * Ported from the reference feature carousel, with the changes the material
- * asked for. These are posters rather than photographs, so nothing is cropped:
- * each is shown whole and the caption sits beneath the card instead of over
+ * asked for. These are posters rather than photographs, so nothing is cropped
+ * and no card is padded out to a shape the flyer does not have: each card is
+ * the image, cut to its own edges. The caption sits beneath rather than over
  * it, where it would have covered the very text it describes. The chips carry
  * names alone, so the two icon packages the reference wanted are not here.
  *
@@ -19,7 +20,7 @@ import { ANNOUNCEMENTS } from "@/lib/site";
  * flyer being read is never pulled away.
  */
 
-const AUTO_PLAY_MS = 6000;
+const AUTO_PLAY_MS = 5000;
 const ITEM_HEIGHT = 64;
 
 /** Wrap a value into [min, max), so the wheel has no ends. */
@@ -46,9 +47,11 @@ export default function AnnouncementsSection() {
     // Someone who asked for less motion gets the first flyer and the chips,
     // and turns the wheel themselves.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = setInterval(next, AUTO_PLAY_MS);
-    return () => clearInterval(timer);
-  }, [next, paused]);
+    const timer = setTimeout(next, AUTO_PLAY_MS);
+    return () => clearTimeout(timer);
+    // `step` restarts the clock on every turn, so a flyer reached by clicking
+    // its name gets the same five seconds as one the wheel reached itself.
+  }, [next, paused, step]);
 
   /** Where a card sits relative to the one on show. */
   const placeOf = (index: number) => {
@@ -118,41 +121,49 @@ export default function AnnouncementsSection() {
 
           {/* the flyers */}
           <div>
-            <div className="relative mx-auto aspect-[4/5] w-full max-w-[420px]">
+            <div className="relative h-[380px] w-full md:h-[500px]">
               {ANNOUNCEMENTS.map((item, index) => {
                 const place = placeOf(index);
                 const isActive = place === "active";
                 const isPrev = place === "prev";
                 const isNext = place === "next";
                 return (
-                  <motion.div
+                  <div
                     key={item.id}
-                    initial={false}
-                    animate={{
-                      x: isPrev ? -70 : isNext ? 70 : 0,
-                      scale: isActive ? 1 : isPrev || isNext ? 0.85 : 0.7,
-                      opacity: isActive ? 1 : isPrev || isNext ? 0.28 : 0,
-                      rotate: isPrev ? -3 : isNext ? 3 : 0,
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{
                       zIndex: isActive ? 20 : isPrev || isNext ? 10 : 0,
+                      pointerEvents: isActive ? "auto" : "none",
                     }}
-                    transition={{ type: "spring", stiffness: 260, damping: 25, mass: 0.8 }}
-                    className="absolute inset-0 overflow-hidden rounded-2xl bg-[color:var(--canvas-parchment)] ring-1 ring-black/[0.06] shadow-[var(--shadow-product)]"
-                    style={{ pointerEvents: isActive ? "auto" : "none" }}
                     aria-hidden={!isActive}
                   >
-                    {/* contain, not cover: these are posters, and a crop would
-                        take the dates and the scripture off the edges */}
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      sizes="(min-width: 768px) 420px, 90vw"
-                      className={cn(
-                        "object-contain transition-[filter] duration-700",
-                        isActive ? "blur-0 grayscale-0" : "blur-[2px] grayscale",
-                      )}
-                    />
-                  </motion.div>
+                    <motion.div
+                      initial={false}
+                      animate={{
+                        x: isPrev ? -70 : isNext ? 70 : 0,
+                        scale: isActive ? 1 : isPrev || isNext ? 0.85 : 0.7,
+                        opacity: isActive ? 1 : isPrev || isNext ? 0.28 : 0,
+                        rotate: isPrev ? -3 : isNext ? 3 : 0,
+                      }}
+                      transition={{ type: "spring", stiffness: 260, damping: 25, mass: 0.8 }}
+                      className="flex max-h-full max-w-full"
+                    >
+                      {/* The image is the card. Sized by its own ratio and
+                          bounded by the row, so it fills its outline exactly
+                          and leaves no margin at any edge. */}
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        width={item.width}
+                        height={item.height}
+                        sizes="(min-width: 768px) 500px, 90vw"
+                        className={cn(
+                          "block h-auto max-h-[380px] w-auto max-w-full rounded-2xl object-contain shadow-[var(--shadow-product)] ring-1 ring-black/[0.06] transition-[filter] duration-700 md:max-h-[500px]",
+                          isActive ? "blur-0 grayscale-0" : "blur-[2px] grayscale",
+                        )}
+                      />
+                    </motion.div>
+                  </div>
                 );
               })}
             </div>
