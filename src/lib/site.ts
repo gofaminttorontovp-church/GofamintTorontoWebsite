@@ -166,7 +166,7 @@ export const SERVICE_TIMES = [
   { name: "Sunday Service", when: "Sundays, 10:00am", lead: true },
   { name: "Morning Prayer", when: "Monday to Saturday, 6:15am" },
   { name: "Bible Study", when: "Tuesdays, 7:00pm" },
-  { name: "Bible Study", when: "Fridays, 7:00pm" },
+  { name: "Prayer Meeting", when: "Fridays, 7:00pm" },
 ] as const;
 
 export const LOCATION = {
@@ -216,4 +216,13 @@ export const SOCIALS = [
 export const UPCOMING_EVENTS = [
   { date: "Aug 29", title: "Shine: back to school", time: "10:00am" },
   { date: "Sep 12", title: "National Men's Conference", time: "1:00pm" },
+  {
+    date: "Nov 13",
+    title: "Night of worship",
+    time: "7:00pm",
+    // Seven Fridays, the last of them Christmas Day. Said here rather than
+    // as seven near identical rows, and it names what it displaces so that
+    // nobody arrives on a Friday expecting the prayer meeting.
+    note: "Every Friday to December 25, in place of the Friday prayer meeting",
+  },
 ] as const;
