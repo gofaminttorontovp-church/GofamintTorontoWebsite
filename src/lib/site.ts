@@ -253,7 +253,7 @@ export const GROUPS = [
     image: "/groups/pastor-sam-adusi.jpg",
     alt: "Pastor Sam Adusi outdoors in a dark suit and red tie",
     description:
-      "Pastor Sam Adusi leads Gofamint Toronto and preaches on Sunday mornings. If you are visiting for the first time, or you would like someone to pray with you, ask for him.",
+      "Pastor Samuel Adusi leads Gofamint Toronto and preaches on Sunday mornings. If you are visiting for the first time, or you would like someone to pray with you, ask for him.",
   },
   {
     id: "choir",
@@ -284,9 +284,9 @@ export const GROUPS = [
   {
     id: "youth",
     group: "Youth",
-    name: "Sister Ebunoluwa Sofolahan",
+    name: "Sister Ebunoluwa",
     image: "/groups/sister-ebunoluwa-sofolahan.jpg",
-    alt: "Sister Ebunoluwa Sofolahan outside the church on a bright afternoon",
+    alt: "Sister Ebunoluwa outside the church on a bright afternoon",
     description:
       "Students and young adults, meeting to study together and to work out what following Christ looks like in a classroom and a first job. Some of it happens on Zoom, so distance is no reason to stay away.",
   },

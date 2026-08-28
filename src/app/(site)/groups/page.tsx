@@ -19,7 +19,10 @@ export default function GroupsPage() {
       className="overflow-x-clip px-6 py-20 md:px-8 md:py-24"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-12 md:gap-16">
-        <header className="flex flex-col gap-3">
+        {/* The opening sits down the middle of the page. The paragraph keeps
+            its measure and is centred within it, rather than being stretched
+            to the full width of the container to fill the line. */}
+        <header className="flex flex-col items-center gap-3 text-center">
           <div style={eyebrow}>GROUPS</div>
           <h2 style={h2} className="!text-[36px] md:!text-[46px]">
             Meet us.
@@ -69,32 +72,34 @@ export default function GroupsPage() {
                 </div>
 
                 <div className="flex flex-col gap-4 md:col-start-1 md:row-start-1 md:gap-5">
+                  {/* The choir is the one entry with no person's name of its
+                      own, so its group takes the heading and is set like the
+                      names are. The others keep the group as a small label
+                      above the person who leads it; printing it twice, once
+                      small and once large, is what that would come to. */}
                   <div className="flex flex-col gap-2">
-                    <div style={eyebrow} className="!text-[11px] md:!text-[12px]">
-                      {entry.group.toUpperCase()}
-                    </div>
-                    {/* The choir is the one entry with no name of its own; the
-                        group heading above is the whole of its title, so this
-                        block is skipped rather than left standing empty. */}
                     {"name" in entry ? (
-                      <div className="flex flex-col gap-1">
-                        <h3
-                          className="m-0 text-[26px] leading-tight md:text-[38px]"
-                          style={{
-                            fontFamily: "var(--font-display)",
-                            fontWeight: 600,
-                            color: "#1d1d1f",
-                          }}
-                        >
-                          {entry.name}
-                        </h3>
-                        {"role" in entry ? (
-                          <p className="m-0 text-[13px] md:text-[15px]" style={{ color: "#7a7a7a" }}>
-                            {entry.role}
-                          </p>
-                        ) : null}
+                      <div style={eyebrow} className="!text-[11px] md:!text-[12px]">
+                        {entry.group.toUpperCase()}
                       </div>
                     ) : null}
+                    <div className="flex flex-col gap-1">
+                      <h3
+                        className="m-0 text-[26px] leading-tight md:text-[38px]"
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontWeight: 600,
+                          color: "#1d1d1f",
+                        }}
+                      >
+                        {"name" in entry ? entry.name : entry.group}
+                      </h3>
+                      {"role" in entry ? (
+                        <p className="m-0 text-[13px] md:text-[15px]" style={{ color: "#7a7a7a" }}>
+                          {entry.role}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                   <p
                     className="m-0 max-w-lg text-[15px] leading-relaxed md:text-[17px]"
