@@ -109,11 +109,10 @@
   --radius: var(--radius-md);
 }
 
-/* The header runs black once it condenses into its pill (and while the mobile
-   menu is open). Re-pointing the token layer on that one element is enough —
-   every shadcn utility inside it, surfaces and borders and buttons alike,
-   follows the override. Scrolled to the top the header is transparent, so it
-   keeps the light tokens and its ink text over the hero sky. */
+/* The header runs black. Re-pointing the token layer on that one element is
+   enough — every shadcn utility inside it, surfaces and borders and buttons
+   alike, follows the override, so the component itself needs no dark variant
+   of its own. */
 .header-dark {
   --background: var(--surface-black);
   --foreground: var(--on-dark);

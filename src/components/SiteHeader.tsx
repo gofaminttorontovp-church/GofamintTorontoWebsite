@@ -12,10 +12,10 @@ import { HEADER_CTAS, HEADER_LINKS } from "@/lib/site";
 /**
  * The site header, shared by every page including the home hero.
  *
- * It starts transparent so the hero's sky (and the drawn line) run clean
- * behind it, then settles into a frosted, floating pill once the page is
- * scrolled — narrower, rounded, and lifted off the top edge on desktop.
- * On phones it stays a full-width bar and opens a full-screen menu.
+ * It is black throughout — a full-bleed bar across the top of the page that
+ * condenses into a floating pill once scrolled: narrower, rounded, and lifted
+ * off the top edge on desktop. On phones it stays a full-width bar and opens
+ * a full-screen menu.
  *
  * `overlay` takes the header out of the flow so the page beneath starts at
  * the very top of the viewport — the home page needs that, since the hero
@@ -26,8 +26,6 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = React.useState(false);
   const scrolled = useScroll(10);
   const pathname = usePathname();
-  // Black once it has a surface of its own; ink-on-sky while transparent.
-  const dark = scrolled || open;
 
   React.useEffect(() => {
     if (open) {
@@ -52,21 +50,20 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   return (
     <header
       className={cn(
-        "z-50 mx-auto w-full max-w-5xl border-b border-transparent text-foreground md:rounded-md md:border md:border-transparent md:transition-all md:ease-out",
+        // Black throughout — barely translucent, so what is behind warms it
+        // rather than greying it out. Only the shape changes on scroll.
+        "header-dark bg-background/95 supports-[backdrop-filter]:bg-background/90 backdrop-blur-lg text-foreground",
+        "z-50 mx-auto w-full border-b border-transparent md:border md:border-transparent md:transition-all md:ease-out",
         overlay ? "fixed inset-x-0 top-0" : "sticky top-0",
-        dark && "header-dark",
         {
-          // Barely translucent: enough for the sky to warm the black, not
-          // enough to turn it grey.
-          "bg-background/95 supports-[backdrop-filter]:bg-background/90 border-border md:border-border backdrop-blur-lg md:top-4 md:max-w-4xl md:shadow":
+          "border-border md:top-4 md:max-w-4xl md:rounded-md md:border-border md:shadow":
             scrolled && !open,
-          "bg-background/95": open,
         },
       )}
     >
       <nav
         className={cn(
-          "flex h-14 w-full items-center justify-between px-4 md:h-12 md:transition-all md:ease-out",
+          "mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 md:h-12 md:transition-all md:ease-out",
           {
             "md:px-2": scrolled,
           },
