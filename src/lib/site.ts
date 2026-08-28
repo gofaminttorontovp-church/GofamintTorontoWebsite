@@ -1,12 +1,25 @@
 import type { CSSProperties } from "react";
 
-/** Primary navigation — shared by the hero header, the site header, and the footer. */
+/** Primary navigation — the full set, listed in the footer. */
 export const NAV_LINKS = [
   { href: "/about", label: "About" },
   { href: "/visit", label: "Visit" },
   { href: "/events", label: "Events" },
   { href: "/media", label: "Media" },
   { href: "/groups", label: "Groups" },
+] as const;
+
+/** The header carries three of those as plain links... */
+export const HEADER_LINKS = [
+  { href: "/visit", label: "Visit" },
+  { href: "/events", label: "Events" },
+  { href: "/groups", label: "Groups" },
+] as const;
+
+/** ...and promotes About and Media to buttons, spelled out as invitations. */
+export const HEADER_CTAS = [
+  { href: "/about", label: "Learn About us", variant: "outline" },
+  { href: "/media", label: "View our Photos", variant: "default" },
 ] as const;
 
 /** Small uppercase section eyebrow (e.g. "ABOUT"). */

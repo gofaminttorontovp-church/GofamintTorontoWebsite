@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import LightShaftBackground from "@/components/LightShaftBackground";
-import { NAV_LINKS } from "@/lib/site";
 
 /**
  * Scroll-driven hero, ported from the Gofamint Toronto design.
@@ -476,13 +474,6 @@ export default function Hero() {
   let caretWOpacity = 0;
   if (A > 468) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((A - 499) / 6);
 
-  const navLinkStyle: React.CSSProperties = {
-    fontSize: 14,
-    color: "#1d1d1f",
-    textDecoration: "none",
-    opacity: 0.85,
-  };
-
   return (
     <div ref={heroRef} id="top" style={{ height: `${SCROLL_LENGTH_VH}vh`, position: "relative", background: "#7EC8EF" }}>
       <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
@@ -518,22 +509,6 @@ export default function Hero() {
             }}
           />
         )}
-
-        {/* top bar: logo left + nav links */}
-        <header className="hero-header" style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 3 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Gofamint Toronto logo" style={{ width: 52, height: 52, objectFit: "contain" }} />
-            <span className="hero-wordmark" style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "#1d1d1f" }}>Gofamint Toronto</span>
-          </div>
-          <nav className="hero-nav" style={{ display: "flex", alignItems: "center" }}>
-            {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} style={navLinkStyle}>
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </header>
 
         {/* centered title lockup — bows out as the dove takes flight */}
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: welcomeOpacity }}>
