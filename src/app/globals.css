@@ -181,6 +181,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --font-sans: var(--font-text);
+  --font-serif: var(--font-display);
   --radius-md: var(--radius);
 }
 
