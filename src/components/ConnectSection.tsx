@@ -13,7 +13,7 @@ import { CONTACT, LOCATION, SERVICE_TIMES, SOCIALS } from "@/lib/site";
  */
 export default function ConnectSection() {
   return (
-    <section id="connect" className="bg-black text-white">
+    <section id="connect" className="scroll-mt-20 bg-black text-white md:scroll-mt-24">
       <div className="mx-auto max-w-5xl px-6 py-24 md:py-28">
         <h2 className="text-center font-serif text-[40px] leading-tight md:text-5xl">
           Come and Worship With Us

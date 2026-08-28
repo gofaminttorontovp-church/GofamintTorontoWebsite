@@ -31,7 +31,7 @@ const STATEMENTS = [
 
 export default function MissionSection() {
   return (
-    <section id="mission" className="bg-black text-white">
+    <section id="mission" className="scroll-mt-20 bg-black text-white md:scroll-mt-24">
       <div className="mx-auto max-w-5xl px-6 py-24 md:py-32">
         <h2 className="text-center font-serif text-[40px] leading-tight md:text-5xl">
           Our Mission Statements

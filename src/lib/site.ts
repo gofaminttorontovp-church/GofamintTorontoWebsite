@@ -1,9 +1,16 @@
 import type { CSSProperties } from "react";
 
-/** Primary navigation — the full set, listed in the footer. */
+/**
+ * Primary navigation — the full set, listed in the footer.
+ *
+ * About and Visit are no longer pages. What they promised now lives on the
+ * home page, so they point at the sections that say it: the mission
+ * statements and the service times. A hash from another route sends the
+ * visitor home and scrolls them there.
+ */
 export const NAV_LINKS = [
-  { href: "/about", label: "About" },
-  { href: "/visit", label: "Visit" },
+  { href: "/#mission", label: "About" },
+  { href: "/#connect", label: "Visit" },
   { href: "/events", label: "Events" },
   { href: "/media", label: "Media" },
   { href: "/groups", label: "Groups" },
@@ -11,14 +18,14 @@ export const NAV_LINKS = [
 
 /** The header carries three of those as plain links... */
 export const HEADER_LINKS = [
-  { href: "/visit", label: "Visit" },
+  { href: "/#connect", label: "Visit" },
   { href: "/events", label: "Events" },
   { href: "/groups", label: "Groups" },
 ] as const;
 
 /** ...and promotes About and Media to buttons, spelled out as invitations. */
 export const HEADER_CTAS = [
-  { href: "/about", label: "Learn About us", variant: "outline" },
+  { href: "/#mission", label: "Learn About us", variant: "outline" },
   { href: "/media", label: "View our Photos", variant: "default" },
 ] as const;
 
