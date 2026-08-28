@@ -46,13 +46,8 @@ export const h2: CSSProperties = {
 
 export type HeroTreatment = "shafts" | "photo" | "mono" | "dark";
 
-/**
- * Which one the home page wears. Change this line to compare them.
- *
- * Held at "shafts" — the original sky — until the skyline photograph is
- * licensed and in /public, so the page never ships a stand-in.
- */
-export const HERO_BACKDROP: HeroTreatment = "shafts";
+/** Which one the home page wears. Change this line to compare them. */
+export const HERO_BACKDROP: HeroTreatment = "photo";
 
 /**
  * The skyline photograph. `flip` mirrors it horizontally — the aerial shot
@@ -61,12 +56,11 @@ export const HERO_BACKDROP: HeroTreatment = "shafts";
  * on a narrow screen.
  */
 export const HERO_PHOTO = {
-  // Stand-in until the skyline photograph is licensed and dropped into
-  // /public: point this at "/skyline.jpg" and the treatments below apply to
-  // it unchanged. cn-tower.jpg is a portrait shot, so it crops hard here.
-  src: "/cn-tower.jpg",
+  src: "/cn_tower.webp",
   flip: false,
-  position: "center 40%",
+  // Biased right of centre: on a narrow screen a 16:9 photo loses most of its
+  // width to the crop, and this keeps the tower inside what survives.
+  position: "62% 50%",
 };
 
 /**

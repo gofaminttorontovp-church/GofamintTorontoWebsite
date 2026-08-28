@@ -482,7 +482,7 @@ export default function Hero() {
         <HeroBackdrop treatment={HERO_BACKDROP} />
 
         {/* the sky settles into the logo's deep indigo at the base */}
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: `linear-gradient(to bottom, rgba(${base}, 0) 0%, rgba(${base}, 0.45) 60%, rgb(${base}) 100%)`, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: `linear-gradient(to bottom, rgba(${base}, 0) 0%, rgba(${base}, 0.22) 62%, rgb(${base}) 100%)`, pointerEvents: "none" }} />
 
         {/* the red line, drawn by scroll: enters above the headline and dives under it */}
         {ready && (
