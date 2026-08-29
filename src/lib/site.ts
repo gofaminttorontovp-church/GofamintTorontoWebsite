@@ -400,7 +400,7 @@ export const PHOTOS = [
     src: "/photos/outreach-team-in-the-lot.jpg",
     alt: "Five women in matching shirts standing together in a car park, a small girl beside them",
     title: "Out in the neighbourhood",
-    caption: "Our members in the plaza, the afternoon they went out to meet it",
+    caption: "Our family in the plaza, the afternoon they went out to meet it",
   },
   {
     id: "preaching",
@@ -459,13 +459,6 @@ export const PHOTOS = [
     caption: "Worship, from the middle of the congregation",
   },
   {
-    id: "mother-son",
-    src: "/photos/mother-and-son-at-the-shelter.jpg",
-    alt: "A woman and a boy at a bus shelter, both making a peace sign",
-    title: "At the bus shelter",
-    caption: "A mother and son from the church, a stop along the way",
-  },
-  {
     id: "blue-light",
     src: "/photos/preaching-under-the-blue-light.jpg",
     alt: "A man preaching at the lectern under blue stage light",
@@ -477,7 +470,7 @@ export const PHOTOS = [
     src: "/photos/two-women-seated-together.jpg",
     alt: "Two women seated side by side in a service, one in a headwrap, one in yellow",
     title: "Side by side",
-    caption: "Church members seated together through the service",
+    caption: "Our family seated together through the service",
   },
   {
     id: "flyers",
@@ -491,7 +484,7 @@ export const PHOTOS = [
     src: "/photos/listening-in-the-pink-jacket.jpg",
     alt: "A man in a pink checked jacket standing among the congregation",
     title: "Standing to listen",
-    caption: "A member on his feet near the back of the room",
+    caption: "One of our family on his feet near the back of the room",
   },
   {
     id: "worship-red",
@@ -526,14 +519,14 @@ export const PHOTOS = [
     src: "/photos/head-bowed-in-the-red-chair.jpg",
     alt: "A young woman seated in a red chair with her head bowed",
     title: "Head bowed",
-    caption: "A member in prayer, in one of the red chairs",
+    caption: "Someone from our family in prayer, in one of the red chairs",
   },
   {
     id: "two-writing",
     src: "/photos/two-of-them-writing.jpg",
     alt: "A man in white writing in a notebook, a woman beside him doing the same",
     title: "Two rows, two notebooks",
-    caption: "Members taking the message down as it came",
+    caption: "Our family taking the message down as it came",
   },
   {
     id: "families",
@@ -561,6 +554,6 @@ export const PHOTOS = [
     src: "/photos/following-along-on-a-tablet.jpg",
     alt: "A man following the service on a tablet resting on his lap",
     title: "On a tablet",
-    caption: "A member following the passage off a screen",
+    caption: "One of ours, following the passage off a screen",
   },
 ] as const;
