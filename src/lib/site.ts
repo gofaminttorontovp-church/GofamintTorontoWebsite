@@ -26,7 +26,7 @@ export const HEADER_LINKS = [
 /** ...and promotes About and Media to buttons, spelled out as invitations. */
 export const HEADER_CTAS = [
   { href: "/#mission", label: "Learn About us", variant: "outline" },
-  { href: "/media", label: "View our Photos", variant: "default" },
+  { href: "/media", label: "View our Media", variant: "default" },
 ] as const;
 
 /**
