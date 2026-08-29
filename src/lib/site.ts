@@ -26,25 +26,31 @@ export const HEADER_LINKS = [
 /** ...and promotes About and Media to buttons, spelled out as invitations. */
 export const HEADER_CTAS = [
   { href: "/#mission", label: "Learn About us", variant: "outline" },
-  { href: "/media", label: "View our Photos", variant: "default" },
+  { href: "/media", label: "View our Media", variant: "default" },
 ] as const;
 
-/** Small uppercase section eyebrow (e.g. "ABOUT"). */
+/**
+ * Small uppercase section eyebrow (e.g. "ABOUT").
+ *
+ * The colours are the tokens rather than the hex they resolve to, so a
+ * section that re-points its ink — `.section-dark` — carries these with it.
+ * On every light section they are the same #7a7a7a and #1d1d1f as before.
+ */
 export const eyebrow: CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
   letterSpacing: "0.12em",
-  color: "#7a7a7a",
+  color: "var(--ink-48)",
 };
 
-/** Section headline on a light surface. */
+/** Section headline, on whichever surface the section sets. */
 export const h2: CSSProperties = {
   margin: 0,
   fontFamily: "var(--font-display)",
   fontSize: 46,
   fontWeight: 600,
   letterSpacing: "0",
-  color: "#1d1d1f",
+  color: "var(--ink)",
 };
 
 /* ------------------------------------------------------------------
@@ -184,6 +190,9 @@ export const CONTACT = {
   emailHref: "mailto:gofaminttorontovp@gmail.com",
 } as const;
 
+/** The channel the video gallery draws from, and the mark in the footer row. */
+export const YOUTUBE_CHANNEL = "https://www.youtube.com/@gofamint-torontovp4833";
+
 /** The marks are drawn in the social-links component, keyed by `icon`. */
 export const SOCIALS = [
   {
@@ -201,7 +210,7 @@ export const SOCIALS = [
   {
     icon: "youtube",
     label: "YouTube",
-    href: "https://www.youtube.com/@gofamint-torontovp4833",
+    href: YOUTUBE_CHANNEL,
     color: "#FF0000",
   },
 ] as const;
@@ -277,7 +286,7 @@ export const GROUPS = [
     group: "Women's Ministry",
     name: "Deaconess Grace Adusi",
     image: "/groups/deaconess-grace-adusi.jpg",
-    alt: "Deaconess Grace Adusi worshipping during a service",
+    alt: "Deaconess Grace Adusi in a red hat and a red floral dress",
     description:
       "The women pray for the church and look after the people in it, from the mother with a newborn to the sister who arrived in Toronto last month. Whatever season you are in, you are welcome.",
   },
@@ -286,7 +295,7 @@ export const GROUPS = [
     group: "Youth",
     name: "Sister Ebunoluwa",
     image: "/groups/sister-ebunoluwa-sofolahan.jpg",
-    alt: "Sister Ebunoluwa outside the church on a bright afternoon",
+    alt: "Sister Ebunoluwa in a white shirt, outdoors on a bright day",
     description:
       "Students and young adults, meeting to study together and to work out what following Christ looks like in a classroom and a first job. Some of it happens on Zoom, so distance is no reason to stay away.",
   },
@@ -298,5 +307,253 @@ export const GROUPS = [
     alt: "Ms. Obadaki in a grey blazer at the Gofamint Canada convention",
     description:
       "The children are taught on a Sunday in a way that is theirs, rather than a shortened version of what the adults are given. Bring them. They are expected, not merely tolerated.",
+  },
+] as const;
+
+/* ------------------------------------------------------------------
+   The YouTube gallery on the Media page.
+
+   Each entry is only an id and the words that go under the poster; the
+   poster itself is YouTube's own thumbnail for that id, so nothing has to be
+   exported, resized or committed here when a video is added. `kind` is the
+   small label above the title, and `credit` names whoever the video belongs
+   to — the preacher for a sermon, the singers for a ministration — and is
+   left off where the video is the whole congregation.
+
+   Newest at the top is not the order here; the row is arranged so the two
+   sermons fall where a visitor scanning the grid will meet them.
+   ------------------------------------------------------------------ */
+
+export const VIDEOS = [
+  {
+    id: "kB-sr65Xg1k",
+    kind: "Ministration",
+    title: "Enough For Me",
+    credit: "Victorious Voices, composed by Peterson Okopi",
+  },
+  {
+    id: "784Nly_4TMc",
+    kind: "Praise",
+    title: "Powerful Praise in May",
+  },
+  {
+    id: "4tNIVaYlA7U",
+    kind: "Praise",
+    title: "Ariaria Praise Medley",
+  },
+  {
+    id: "tmmH6RgZJ4A",
+    kind: "Ministration",
+    title: "Omumi Wa Laye (He Kept Me Alive)",
+    credit: "Victorious Voices, arranged by Dave Ugbor",
+  },
+  {
+    id: "1_UekKxkpXc",
+    kind: "Sermon",
+    title: "The Landlord Is Coming",
+    credit: "Pastor Sam Adusi",
+  },
+  {
+    id: "M2_iT381aqk",
+    kind: "Ministration",
+    title: "Ore Ofe Sha",
+    credit: "Victorious Voices, by Rotimikeys",
+  },
+  {
+    id: "g5HWcpVXvS8",
+    kind: "Sermon",
+    title: "The Value of a Life",
+    credit: "Pastor Israel Sofolahan",
+  },
+  {
+    id: "S_xwLGZLG9o",
+    kind: "Praise",
+    title: "High Praise and Worship Medley",
+  },
+  {
+    id: "BWvQgyQNUdc",
+    kind: "Praise",
+    title: "African Canadian Christmas Medley",
+  },
+] as const;
+
+/* ------------------------------------------------------------------
+   The photographs on the Media page, taken from the Facebook album.
+
+   Two occasions: a service, under the blue light of the platform, and an
+   afternoon out in the plaza with the families who came. They are square
+   because the album's own copies are square, 414px a side, so the row is
+   built of equal tiles rather than the wide-and-narrow mix the format allows
+   — a wide tile would have to crop and enlarge a square to fill itself.
+
+   The captions speak of the people in them as the church's own — our members,
+   our women, our children — rather than counting them off as strangers in a
+   frame. What they claim is still only what is visible: where a name or an
+   occasion cannot be seen in the picture, it is not asserted here.
+   ------------------------------------------------------------------ */
+
+export const FACEBOOK_PHOTOS = "https://www.facebook.com/GOFAMINTTORONTO/photos";
+
+export const PHOTOS = [
+  {
+    id: "outreach-team",
+    src: "/photos/outreach-team-in-the-lot.jpg",
+    alt: "Five women in matching shirts standing together in a car park, a small girl beside them",
+    title: "Out in the neighbourhood",
+    caption: "Our family in the plaza, the afternoon they went out to meet it",
+  },
+  {
+    id: "preaching",
+    src: "/photos/preaching-at-the-lectern.jpg",
+    alt: "A young man preaching at a glass lectern, microphone in hand",
+    title: "The word, preached",
+    caption: "At the lectern, mid-sentence",
+  },
+  {
+    id: "praise",
+    src: "/photos/praise-with-hands-raised.jpg",
+    alt: "Two women dancing in praise during a service, hands lifted",
+    title: "Praise",
+    caption: "Our people dancing where they stood",
+  },
+  {
+    id: "writing",
+    src: "/photos/writing-through-the-message.jpg",
+    alt: "A woman in a green patterned dress writing in a notebook during a service",
+    title: "Writing it down",
+    caption: "A notebook open through the message",
+  },
+  {
+    id: "children-sign",
+    src: "/photos/children-by-the-plaza-sign.jpg",
+    alt: "Children and women gathered under a plaza sign on a grey afternoon",
+    title: "The children who came",
+    caption: "Our youngest, under the sign at the top of the plaza",
+  },
+  {
+    id: "singing-red",
+    src: "/photos/singing-in-red.jpg",
+    alt: "A woman in a red top singing during a service, smiling",
+    title: "Singing",
+    caption: "A voice from the congregation, mid-song",
+  },
+  {
+    id: "notes",
+    src: "/photos/notes-open-on-his-knee.jpg",
+    alt: "A man in a dark suit and pink shirt writing in a notebook balanced on his knee",
+    title: "Following along",
+    caption: "Notebook on his knee, pen moving",
+  },
+  {
+    id: "three-women",
+    src: "/photos/three-women-in-the-car-park.jpg",
+    alt: "Three women standing shoulder to shoulder beside a van, smiling",
+    title: "Our women, before setting out",
+    caption: "Gathered beside the van, ready to go",
+  },
+  {
+    id: "hand-lifted",
+    src: "/photos/a-hand-lifted-in-worship.jpg",
+    alt: "A woman in a patterned wrap with both hands lifted during worship",
+    title: "Both hands up",
+    caption: "Worship, from the middle of the congregation",
+  },
+  {
+    id: "blue-light",
+    src: "/photos/preaching-under-the-blue-light.jpg",
+    alt: "A man preaching at the lectern under blue stage light",
+    title: "Under the blue light",
+    caption: "The platform, part way through the service",
+  },
+  {
+    id: "two-women",
+    src: "/photos/two-women-seated-together.jpg",
+    alt: "Two women seated side by side in a service, one in a headwrap, one in yellow",
+    title: "Side by side",
+    caption: "Our family seated together through the service",
+  },
+  {
+    id: "flyers",
+    src: "/photos/children-with-the-flyers.jpg",
+    alt: "Children standing on the kerb holding flyers, in front of a plaza",
+    title: "Handing them out",
+    caption: "Our children, and the flyers they carried",
+  },
+  {
+    id: "pink-jacket",
+    src: "/photos/listening-in-the-pink-jacket.jpg",
+    alt: "A man in a pink checked jacket standing among the congregation",
+    title: "Standing to listen",
+    caption: "One of our family on his feet near the back of the room",
+  },
+  {
+    id: "worship-red",
+    src: "/photos/worshipping-in-red.jpg",
+    alt: "A woman in a red top with one hand raised, singing",
+    title: "One hand raised",
+    caption: "Worship, somewhere in the middle of the singing",
+  },
+  {
+    id: "notebook-phone",
+    src: "/photos/a-notebook-and-a-phone.jpg",
+    alt: "A young woman writing in a notebook with her phone in her other hand",
+    title: "Notebook and phone",
+    caption: "Keeping up with the passage",
+  },
+  {
+    id: "pavement",
+    src: "/photos/the-group-on-the-pavement.jpg",
+    alt: "A large group of women and children standing on a pavement in front of a plaza",
+    title: "Our church family, outside",
+    caption: "Together on the pavement, before they went back in",
+  },
+  {
+    id: "standing",
+    src: "/photos/standing-through-the-prayer.jpg",
+    alt: "A man in a blue suit standing with his eyes closed during prayer",
+    title: "Through the prayer",
+    caption: "Standing with the congregation, eyes closed",
+  },
+  {
+    id: "head-bowed",
+    src: "/photos/head-bowed-in-the-red-chair.jpg",
+    alt: "A young woman seated in a red chair with her head bowed",
+    title: "Head bowed",
+    caption: "Someone from our family in prayer, in one of the red chairs",
+  },
+  {
+    id: "two-writing",
+    src: "/photos/two-of-them-writing.jpg",
+    alt: "A man in white writing in a notebook, a woman beside him doing the same",
+    title: "Two rows, two notebooks",
+    caption: "Our family taking the message down as it came",
+  },
+  {
+    id: "families",
+    src: "/photos/the-families-who-came-out.jpg",
+    alt: "Women and children posing together in a car park under a grey sky",
+    title: "The families who came out",
+    caption: "Our people together in the car park, under a grey sky",
+  },
+  {
+    id: "headwrap",
+    src: "/photos/seated-in-the-green-headwrap.jpg",
+    alt: "A woman in a green headwrap seated in a service, others around her",
+    title: "In the green headwrap",
+    caption: "One of our women, seated among the congregation",
+  },
+  {
+    id: "ministering",
+    src: "/photos/ministering-in-song.jpg",
+    alt: "A woman singing into a microphone at the lectern",
+    title: "Ministering in song",
+    caption: "At the microphone, on the platform",
+  },
+  {
+    id: "tablet",
+    src: "/photos/following-along-on-a-tablet.jpg",
+    alt: "A man following the service on a tablet resting on his lap",
+    title: "On a tablet",
+    caption: "One of ours, following the passage off a screen",
   },
 ] as const;

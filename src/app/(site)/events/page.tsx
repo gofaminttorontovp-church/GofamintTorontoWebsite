@@ -11,6 +11,11 @@ export const metadata: Metadata = {
 export default function EventsPage() {
   return (
     <>
+      {/* The flyers open the page. They are the things with a date on them
+          that a visitor is most likely to have come for, and they carry the
+          word the church is standing on this month besides. The list of what
+          is coming up follows, as the plain reference version of the same. */}
+      <AnnouncementsSection />
       <section style={{ background: "#ffffff", padding: "100px 32px" }}>
         <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 32 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -50,9 +55,6 @@ export default function EventsPage() {
           </div>
         </div>
       </section>
-      {/* the flyers, which belong with what is coming up rather than on the
-          home page where they used to sit */}
-      <AnnouncementsSection />
     </>
   );
 }

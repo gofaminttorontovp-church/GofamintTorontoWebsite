@@ -21,6 +21,7 @@
   /* --- Ink / text --- */
   --ink: #1d1d1f;               /* headlines + body on light */
   --ink-80: #333333;            /* body on pearl button */
+  --ink-64: #5a5a5e;            /* secondary copy under a heading */
   --ink-48: #7a7a7a;            /* disabled text, fine print */
   --on-dark: #ffffff;           /* text on dark tiles / nav */
   --on-dark-muted: #cccccc;     /* secondary copy on dark */
@@ -31,6 +32,7 @@
   --canvas-parchment: #f5f5f7;  /* signature off-white */
   --surface-pearl: #fafafc;     /* ghost-button fill */
   --tile-dark-1: #272729;       /* primary dark tile */
+  --tile-dark-2: #141416;       /* a section that runs dark, below the tile */
   --surface-black: #000000;     /* nav bar, video, true void */
 
   /* --- Hairlines & borders --- */
@@ -156,6 +158,21 @@
   --ui-accent-foreground: var(--on-dark);
   --border: rgba(255, 255, 255, 0.14);
   --input: rgba(255, 255, 255, 0.22);
+}
+
+/* A whole section that runs dark. The same trick as .header-dark above: the
+   ink tokens are re-pointed on the one element, so every heading, caption and
+   hairline inside it follows without needing a dark variant of its own. The
+   surface is a shade off the black of the header and a shade under the tile
+   the footer is cut from, so the page reads as three steps rather than one
+   dark field with the seams lost. */
+.section-dark {
+  background: var(--tile-dark-2);
+  color: var(--ink);
+  --ink: var(--on-dark);
+  --ink-64: rgba(255, 255, 255, 0.72);
+  --ink-48: rgba(255, 255, 255, 0.5);
+  --hairline: rgba(255, 255, 255, 0.14);
 }
 
 /* Expose the token layer to Tailwind as colour utilities (bg-background,
