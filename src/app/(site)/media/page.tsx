@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 export default function MediaPage() {
   return (
     <>
-      <YoutubeGallery />
       <PhotoGallery />
+      <YoutubeGallery />
     </>
   );
 }

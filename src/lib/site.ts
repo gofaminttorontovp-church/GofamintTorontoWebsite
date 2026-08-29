@@ -378,73 +378,187 @@ export const VIDEOS = [
 ] as const;
 
 /* ------------------------------------------------------------------
-   The photographs on the Media page.
+   The photographs on the Media page, taken from the Facebook album.
 
-   STAND-INS. These are church photographs already in the repository, put
-   here so the row can be seen and judged. The section is meant to carry the
-   Facebook album, and Facebook cannot supply it directly: its image URLs are
-   signed and expire within days, it blocks hot-linking from other origins,
-   and the album itself answers a logged-out request with a login wall. The
-   photographs have to live in `public/photos/` like everything else the site
-   serves. Replace the entries below as the real ones are added; nothing else
-   has to change.
+   Two occasions: a service, under the blue light of the platform, and an
+   afternoon out in the plaza with the families who came. They are square
+   because the album's own copies are square, 414px a side, so the row is
+   built of equal tiles rather than the wide-and-narrow mix the format allows
+   — a wide tile would have to crop and enlarge a square to fill itself.
 
-   `wide` gives a landscape photograph twice the width in the row. Roughly one
-   in three reads best; a row of nothing but wide tiles is just a wide row.
+   The captions say what is in the picture and no more. Where a name or an
+   occasion is not visible in the frame, it is not asserted here.
    ------------------------------------------------------------------ */
 
 export const FACEBOOK_PHOTOS = "https://www.facebook.com/GOFAMINTTORONTO/photos";
 
 export const PHOTOS = [
   {
-    id: "choir",
-    src: "/groups/choir.jpg",
-    alt: "The choir gathered outside the church in blue",
-    title: "The choir, outside",
-    caption: "In blue, on the steps after a Sunday service",
-    wide: true,
+    id: "outreach-team",
+    src: "/photos/outreach-team-in-the-lot.jpg",
+    alt: "Five women in matching shirts standing together in a car park, a small girl beside them",
+    title: "Out in the neighbourhood",
+    caption: "The team in the plaza, on the afternoon they went out",
   },
   {
-    id: "pastor",
-    src: "/groups/pastor-sam-adusi.jpg",
-    alt: "Pastor Sam Adusi outdoors in a dark suit and red tie",
-    title: "Pastor Sam Adusi",
-    caption: "Who preaches on a Sunday morning",
+    id: "preaching",
+    src: "/photos/preaching-at-the-lectern.jpg",
+    alt: "A young man preaching at a glass lectern, microphone in hand",
+    title: "The word, preached",
+    caption: "At the lectern, mid-sentence",
   },
   {
-    id: "grace",
-    src: "/groups/deaconess-grace-adusi.jpg",
-    alt: "Deaconess Grace Adusi in a red hat and a red floral dress",
-    title: "Deaconess Grace Adusi",
-    caption: "Who leads the women's ministry",
+    id: "praise",
+    src: "/photos/praise-with-hands-raised.jpg",
+    alt: "Two women dancing in praise during a service, hands lifted",
+    title: "Praise",
+    caption: "Two of them dancing where they stood",
   },
   {
-    id: "skyline",
-    src: "/cn_tower.webp",
-    alt: "The Toronto skyline with the CN Tower",
-    title: "The city we are in",
-    caption: "Toronto, where the church has kept its doors since",
-    wide: true,
+    id: "writing",
+    src: "/photos/writing-through-the-message.jpg",
+    alt: "A woman in a green patterned dress writing in a notebook during a service",
+    title: "Writing it down",
+    caption: "A notebook open through the message",
   },
   {
-    id: "israel",
-    src: "/groups/pastor-israel-sofolahan.jpg",
-    alt: "Pastor Israel Sofolahan in a navy suit and gold tie",
-    title: "Pastor Israel Sofolahan",
-    caption: "Who leads the men's ministry",
+    id: "children-sign",
+    src: "/photos/children-by-the-plaza-sign.jpg",
+    alt: "Children and women gathered under a plaza sign on a grey afternoon",
+    title: "The children who came",
+    caption: "Under the sign at the top of the plaza",
   },
   {
-    id: "ebunoluwa",
-    src: "/groups/sister-ebunoluwa-sofolahan.jpg",
-    alt: "Sister Ebunoluwa in a white shirt, outdoors on a bright day",
-    title: "Sister Ebunoluwa",
-    caption: "Who leads the youth",
+    id: "singing-red",
+    src: "/photos/singing-in-red.jpg",
+    alt: "A woman in a red top singing during a service, smiling",
+    title: "Singing",
+    caption: "Mid-song, in the middle of the room",
   },
   {
-    id: "obadaki",
-    src: "/groups/ms-obadaki.jpg",
-    alt: "Ms. Obadaki in a grey blazer at the Gofamint Canada convention",
-    title: "Ms. Obadaki",
-    caption: "At the Gofamint Canada convention",
+    id: "notes",
+    src: "/photos/notes-open-on-his-knee.jpg",
+    alt: "A man in a dark suit and pink shirt writing in a notebook balanced on his knee",
+    title: "Following along",
+    caption: "Notebook on his knee, pen moving",
+  },
+  {
+    id: "three-women",
+    src: "/photos/three-women-in-the-car-park.jpg",
+    alt: "Three women standing shoulder to shoulder beside a van, smiling",
+    title: "Three of them",
+    caption: "Beside the van before setting out",
+  },
+  {
+    id: "hand-lifted",
+    src: "/photos/a-hand-lifted-in-worship.jpg",
+    alt: "A woman in a patterned wrap with both hands lifted during worship",
+    title: "Both hands up",
+    caption: "In the middle of the congregation",
+  },
+  {
+    id: "mother-son",
+    src: "/photos/mother-and-son-at-the-shelter.jpg",
+    alt: "A woman and a boy at a bus shelter, both making a peace sign",
+    title: "At the bus shelter",
+    caption: "A stop along the way",
+  },
+  {
+    id: "blue-light",
+    src: "/photos/preaching-under-the-blue-light.jpg",
+    alt: "A man preaching at the lectern under blue stage light",
+    title: "Under the blue light",
+    caption: "The platform, part way through",
+  },
+  {
+    id: "two-women",
+    src: "/photos/two-women-seated-together.jpg",
+    alt: "Two women seated side by side in a service, one in a headwrap, one in yellow",
+    title: "Side by side",
+    caption: "Seated together through the service",
+  },
+  {
+    id: "flyers",
+    src: "/photos/children-with-the-flyers.jpg",
+    alt: "Children standing on the kerb holding flyers, in front of a plaza",
+    title: "Handing them out",
+    caption: "Flyers, and the children who carried them",
+  },
+  {
+    id: "pink-jacket",
+    src: "/photos/listening-in-the-pink-jacket.jpg",
+    alt: "A man in a pink checked jacket standing among the congregation",
+    title: "Standing to listen",
+    caption: "Near the back of the room",
+  },
+  {
+    id: "worship-red",
+    src: "/photos/worshipping-in-red.jpg",
+    alt: "A woman in a red top with one hand raised, singing",
+    title: "One hand raised",
+    caption: "Somewhere in the middle of the singing",
+  },
+  {
+    id: "notebook-phone",
+    src: "/photos/a-notebook-and-a-phone.jpg",
+    alt: "A young woman writing in a notebook with her phone in her other hand",
+    title: "Notebook and phone",
+    caption: "Keeping up with the passage",
+  },
+  {
+    id: "pavement",
+    src: "/photos/the-group-on-the-pavement.jpg",
+    alt: "A large group of women and children standing on a pavement in front of a plaza",
+    title: "All of them, on the pavement",
+    caption: "Before they went back in",
+  },
+  {
+    id: "standing",
+    src: "/photos/standing-through-the-prayer.jpg",
+    alt: "A man in a blue suit standing with his eyes closed during prayer",
+    title: "Through the prayer",
+    caption: "Standing, eyes closed",
+  },
+  {
+    id: "head-bowed",
+    src: "/photos/head-bowed-in-the-red-chair.jpg",
+    alt: "A young woman seated in a red chair with her head bowed",
+    title: "Head bowed",
+    caption: "In one of the red chairs",
+  },
+  {
+    id: "two-writing",
+    src: "/photos/two-of-them-writing.jpg",
+    alt: "A man in white writing in a notebook, a woman beside him doing the same",
+    title: "Both of them writing",
+    caption: "Two rows, two notebooks",
+  },
+  {
+    id: "families",
+    src: "/photos/the-families-who-came-out.jpg",
+    alt: "Women and children posing together in a car park under a grey sky",
+    title: "The families who came out",
+    caption: "In the car park, before the rain",
+  },
+  {
+    id: "headwrap",
+    src: "/photos/seated-in-the-green-headwrap.jpg",
+    alt: "A woman in a green headwrap seated in a service, others around her",
+    title: "In the green headwrap",
+    caption: "Seated among the rest",
+  },
+  {
+    id: "ministering",
+    src: "/photos/ministering-in-song.jpg",
+    alt: "A woman singing into a microphone at the lectern",
+    title: "Ministering in song",
+    caption: "At the microphone, on the platform",
+  },
+  {
+    id: "tablet",
+    src: "/photos/following-along-on-a-tablet.jpg",
+    alt: "A man following the service on a tablet resting on his lap",
+    title: "On a tablet",
+    caption: "The passage, read off a screen",
   },
 ] as const;
