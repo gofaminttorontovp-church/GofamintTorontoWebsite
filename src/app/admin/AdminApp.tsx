@@ -30,10 +30,11 @@ type Change = {
   description: string;
   editor: string;
   branch: string;
+  headSha: string;
   createdAt: string;
   updatedAt: string;
   url: string;
-  previewUrl: string | null;
+  preview: { url: string; ready: boolean } | null;
   mine: boolean;
   canApprove: boolean;
 };
@@ -393,7 +394,7 @@ function SubmitModal({
 }) {
   const [description, setDescription] = useState(editingPr?.description ?? "");
   const [step, setStep] = useState<string | null>(null);
-  const [result, setResult] = useState<{ url: string; previewUrl: string | null } | null>(null);
+  const [result, setResult] = useState<{ url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
@@ -423,7 +424,7 @@ function SubmitModal({
       }
 
       setStep("Sending for approval…");
-      const finished = await api<{ prNumber: number; url: string; previewUrl: string | null }>(
+      const finished = await api<{ prNumber: number; url: string }>(
         "/changes/finish",
         {
           method: "POST",
@@ -436,7 +437,7 @@ function SubmitModal({
         },
       );
       setStep(null);
-      setResult({ url: finished.url, previewUrl: finished.previewUrl });
+      setResult({ url: finished.url });
     } catch (err) {
       setStep(null);
       setError(err instanceof Error ? err.message : "The change couldn't be sent.");
@@ -450,21 +451,10 @@ function SubmitModal({
           <div className="space-y-4">
             <h2 className="font-serif text-[24px] text-neutral-900">Sent ✓</h2>
             <p className="text-[15px] leading-relaxed text-neutral-600">
-              Your change is in. It will appear on the website once an admin approves it.
-              {result.previewUrl
-                ? " In a few minutes you can see a preview of the whole site with your change in it:"
-                : ""}
+              Your change is in. It will appear on the website once an admin approves it. A
+              preview of the whole site with your change in it is being built now — give it a
+              minute, then look under <strong>Waiting for approval</strong>.
             </p>
-            {result.previewUrl && (
-              <a
-                href={result.previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block rounded-xl border border-neutral-200 px-4 py-3 text-center text-[15px] font-medium text-indigo-800 active:bg-neutral-50"
-              >
-                See the preview
-              </a>
-            )}
             <button
               type="button"
               onClick={onDone}
@@ -588,15 +578,19 @@ function ChangesView({
             <p className="text-[14px] leading-relaxed text-neutral-600">{change.description}</p>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            {change.previewUrl && (
+            {change.preview?.ready ? (
               <a
-                href={change.previewUrl}
+                href={change.preview.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-full border border-neutral-300 px-4 py-2 text-[13px] font-medium text-neutral-700 active:bg-neutral-100"
               >
                 See preview
               </a>
+            ) : (
+              <span className="rounded-full border border-dashed border-neutral-200 px-4 py-2 text-[13px] text-neutral-400">
+                Preview building…
+              </span>
             )}
             {(change.mine || change.canApprove) && (
               <button

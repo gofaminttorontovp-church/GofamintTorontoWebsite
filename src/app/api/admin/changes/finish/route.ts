@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession, isResponse, handleFailure, jsonError } from "@/lib/admin/api";
-import {
-  commitFiles,
-  createPR,
-  getContentPR,
-  previewUrlFor,
-  updatePRDescription,
-} from "@/lib/admin/github";
+import { commitFiles, createPR, getContentPR, updatePRDescription } from "@/lib/admin/github";
 import { CONTENT_FILE, validateContent } from "@/lib/admin/validate";
 
 export const runtime = "nodejs";
@@ -59,19 +53,14 @@ export async function POST(request: NextRequest) {
         return jsonError("Only the person who made this change (or an admin) can update it.", 403);
       }
       await updatePRDescription(pr.number, pr.editor, description, title);
-      return NextResponse.json({
-        prNumber: pr.number,
-        url: pr.url,
-        previewUrl: previewUrlFor(pr.branch),
-      });
+      return NextResponse.json({ prNumber: pr.number, url: pr.url });
     }
 
+    // No preview to hand back yet: Vercel has only just been told about the
+    // branch. It appears against the change under "Waiting for approval"
+    // once the build finishes.
     const created = await createPR(body.branch, title, session.name, description);
-    return NextResponse.json({
-      prNumber: created.number,
-      url: created.url,
-      previewUrl: previewUrlFor(body.branch),
-    });
+    return NextResponse.json({ prNumber: created.number, url: created.url });
   } catch (error) {
     return handleFailure("finish change", error);
   }

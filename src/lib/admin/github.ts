@@ -27,6 +27,8 @@ export type ContentPR = {
   description: string;
   editor: string;
   branch: string;
+  /** The commit Vercel built, and the key its preview is filed under. */
+  headSha: string;
   createdAt: string;
   updatedAt: string;
   url: string;
@@ -181,7 +183,7 @@ type RawPR = {
   number: number;
   title: string;
   body: string | null;
-  head: { ref: string };
+  head: { ref: string; sha: string };
   created_at: string;
   updated_at: string;
   html_url: string;
@@ -197,6 +199,7 @@ function toContentPR(raw: RawPR): ContentPR | null {
     description: meta.description,
     editor: meta.editor,
     branch: raw.head.ref,
+    headSha: raw.head.sha,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
     url: raw.html_url,
@@ -276,14 +279,77 @@ export async function closePR(prNumber: number): Promise<void> {
    --------------------------------------------------------------- */
 
 /**
- * Vercel names each branch preview predictably. Set VERCEL_PREVIEW_TEMPLATE
- * to that pattern with `{branch}` where the slug goes — e.g.
- * "https://gofamint-toronto-git-{branch}-yourteam.vercel.app" — and every
- * pending change gets a "See preview" link. Left unset, the link is omitted.
+ * The preview Vercel built for a change, asked for rather than guessed.
+ *
+ * A branch preview URL cannot be constructed from the branch name: Vercel
+ * trims the whole address to the 63 characters DNS allows and appends a
+ * hash of its own, so `content-edit/elijah-20260829194855` becomes
+ * `...-git-content-ed-277d1d-...`, which nothing outside Vercel can work
+ * out. What can be done is to read the deployment Vercel filed against the
+ * commit — it carries the canonical URL, and says whether the build has
+ * finished.
+ *
+ * Needs "Deployments: Read-only" on the GitHub token. Without it this
+ * returns null and the tool simply shows no preview link, so an older token
+ * costs the link and nothing else.
  */
-export function previewUrlFor(branch: string): string | null {
-  const template = process.env.VERCEL_PREVIEW_TEMPLATE;
-  if (!template) return null;
-  const slug = branch.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  return template.replace("{branch}", slug);
+export type Preview = { url: string; ready: boolean };
+
+type Deployment = { id: number; environment: string };
+type DeploymentStatus = { state: string; environment_url?: string | null };
+
+/**
+ * Let an editor through Vercel's preview login.
+ *
+ * Preview deployments sit behind Vercel Authentication, which only admits
+ * people with a Vercel account on the team — which the media team does not
+ * have, and should not need. Turning on "Protection Bypass for Automation"
+ * in the project's Deployment Protection settings publishes
+ * VERCEL_AUTOMATION_BYPASS_SECRET into the deployment by itself, and these
+ * two parameters spend it: the first opens the door, the second asks Vercel
+ * to leave a cookie so the rest of the preview — every page they click
+ * through to — stays open too.
+ *
+ * Unset, the link is handed over untouched and lands on Vercel's login,
+ * which is the behaviour to expect until the setting is turned on.
+ */
+function withBypass(url: string): string {
+  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  if (!secret) return url;
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set("x-vercel-protection-bypass", secret);
+    parsed.searchParams.set("x-vercel-set-bypass-cookie", "true");
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+export async function getPreview(headSha: string): Promise<Preview | null> {
+  try {
+    const deployments = await gh<Deployment[]>(
+      `/repos/${repoPath()}/deployments?sha=${encodeURIComponent(headSha)}&per_page=10`,
+    );
+    // Newest first, and only the previews — a production deployment for this
+    // commit would point at the live site, which is not what is being reviewed.
+    const preview = deployments.find((entry) => /preview/i.test(entry.environment));
+    if (!preview) return null;
+
+    const statuses = await gh<DeploymentStatus[]>(
+      `/repos/${repoPath()}/deployments/${preview.id}/statuses?per_page=20`,
+    );
+    const withUrl = statuses.find((status) => status.environment_url);
+    if (!withUrl?.environment_url) return null;
+
+    return {
+      url: withBypass(withUrl.environment_url),
+      ready: statuses.some((status) => status.state === "success"),
+    };
+  } catch (error) {
+    // A missing permission or a deployment that has not appeared yet is not
+    // a reason to fail the whole list.
+    console.warn("[admin] preview lookup failed:", error);
+    return null;
+  }
 }
