@@ -43,6 +43,9 @@ account in the org):
 3. Permissions → Repository permissions:
    - **Contents: Read and write**
    - **Pull requests: Read and write**
+   - **Deployments: Read-only** — lets the tool show each change's Vercel
+     preview link. Without it everything else still works; pending changes
+     just never leave "Preview building…".
    - everything else: No access.
 4. Set an expiry you're comfortable with (you'll rotate it when it lapses),
    generate, and copy the token.
@@ -63,7 +66,6 @@ you want the tool usable on previews too):
 | `GITHUB_REPO` | `gofaminttorontovp-church/GofamintTorontoWebsite` |
 | `ADMIN_SESSION_SECRET` | any long random string (`openssl rand -hex 32`) |
 | `EDITOR_PASSCODES` | see below |
-| `VERCEL_PREVIEW_TEMPLATE` | optional, see below |
 
 **`EDITOR_PASSCODES`** is the whole user system. One entry per person,
 comma-separated; add `:admin` to anyone allowed to approve and publish:
@@ -79,16 +81,37 @@ redeploy — their signed-in sessions keep working up to 30 days, so if it's
 urgent, also change `ADMIN_SESSION_SECRET`, which signs everyone out at
 once.
 
-**`VERCEL_PREVIEW_TEMPLATE`** gives editors a "See preview" link on every
-pending change. Open any branch preview in Vercel, look at its URL, and
-replace the branch part with `{branch}`:
+### Preview links
 
-```
-https://gofamint-toronto-git-{branch}-yourteam.vercel.app
-```
+The tool asks GitHub for the preview URL Vercel recorded against each
+change and shows it as **See preview**, or **Preview building…** while the
+build is still running. There is no URL pattern to configure — Vercel trims
+these addresses to the 63 characters DNS allows and appends a hash of its
+own, so a branch called `content-edit/elijah-20260829194855` ends up served
+at `...-git-content-ed-277d1d-...`, which cannot be worked out from
+outside. (If you set a `VERCEL_PREVIEW_TEMPLATE` variable during an earlier
+setup, delete it; it is no longer read.)
 
-Skip it and everything still works — there's just no preview link in the
-tool (the pull request on GitHub still gets Vercel's preview comment).
+**One setting is still needed**, because Vercel puts preview deployments
+behind its own login and your editors have no Vercel account. Go to the
+project's **Settings → Deployment Protection**. Either:
+
+- **Turn on Protection Bypass for Automation** (recommended). Vercel
+  generates a secret and publishes it to the deployment itself as
+  `VERCEL_AUTOMATION_BYPASS_SECRET` — you do not copy it anywhere. The tool
+  picks it up and appends it to the links it hands out, so previews open
+  for your team and stay shut to everyone else. Redeploy once after
+  enabling it, so the running deployment picks the secret up.
+- **Or set protection to None.** Previews become readable by anyone holding
+  the link. The links are unguessable and Vercel marks previews `noindex`,
+  so this is a reasonable choice for a site whose content is public anyway
+  — it just means a forwarded link works for whoever receives it.
+
+Password Protection is the third possibility, but it is Enterprise-only or
+a $150/month Pro add-on, so it isn't worth it here.
+
+If neither is done, everything else still works and **See preview** simply
+lands on a Vercel login page.
 
 ### 3. Share the link and the passcodes
 
