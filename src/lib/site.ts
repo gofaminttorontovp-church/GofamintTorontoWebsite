@@ -286,7 +286,7 @@ export const GROUPS = [
     group: "Women's Ministry",
     name: "Deaconess Grace Adusi",
     image: "/groups/deaconess-grace-adusi.jpg",
-    alt: "Deaconess Grace Adusi worshipping during a service",
+    alt: "Deaconess Grace Adusi in a red hat and a red floral dress",
     description:
       "The women pray for the church and look after the people in it, from the mother with a newborn to the sister who arrived in Toronto last month. Whatever season you are in, you are welcome.",
   },
@@ -295,7 +295,7 @@ export const GROUPS = [
     group: "Youth",
     name: "Sister Ebunoluwa",
     image: "/groups/sister-ebunoluwa-sofolahan.jpg",
-    alt: "Sister Ebunoluwa outside the church on a bright afternoon",
+    alt: "Sister Ebunoluwa in a white shirt, outdoors on a bright day",
     description:
       "Students and young adults, meeting to study together and to work out what following Christ looks like in a classroom and a first job. Some of it happens on Zoom, so distance is no reason to stay away.",
   },
