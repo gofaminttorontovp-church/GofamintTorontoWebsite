@@ -10,7 +10,10 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <div style={{ fontFamily: "var(--font-text)", color: "#1d1d1f", background: "#ffffff", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <SiteHeader />
-      <main style={{ flex: 1 }}>{children}</main>
+      {/* A column, so a page shorter than the window can tell its section to
+          grow into the space left over. Without that the wrapper's white
+          shows through under a dark section, as a band above the footer. */}
+      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</main>
       <SiteFooter />
     </div>
   );

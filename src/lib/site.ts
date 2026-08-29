@@ -29,22 +29,28 @@ export const HEADER_CTAS = [
   { href: "/media", label: "View our Photos", variant: "default" },
 ] as const;
 
-/** Small uppercase section eyebrow (e.g. "ABOUT"). */
+/**
+ * Small uppercase section eyebrow (e.g. "ABOUT").
+ *
+ * The colours are the tokens rather than the hex they resolve to, so a
+ * section that re-points its ink — `.section-dark` — carries these with it.
+ * On every light section they are the same #7a7a7a and #1d1d1f as before.
+ */
 export const eyebrow: CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
   letterSpacing: "0.12em",
-  color: "#7a7a7a",
+  color: "var(--ink-48)",
 };
 
-/** Section headline on a light surface. */
+/** Section headline, on whichever surface the section sets. */
 export const h2: CSSProperties = {
   margin: 0,
   fontFamily: "var(--font-display)",
   fontSize: 46,
   fontWeight: 600,
   letterSpacing: "0",
-  color: "#1d1d1f",
+  color: "var(--ink)",
 };
 
 /* ------------------------------------------------------------------

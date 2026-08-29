@@ -119,8 +119,11 @@ export default function ThumbnailButton({
         )}
       >
         <div
+          /* The hairline is the token, not a fixed black: on the dark
+             section it comes back as white, so the poster keeps an edge
+             against the surface either way. */
           className="relative aspect-video w-full overflow-hidden rounded-[18px] bg-black
-                     shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.06]
+                     shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-[color:var(--hairline)]
                      transition-shadow duration-300 group-hover:shadow-[3px_5px_30px_rgba(0,0,0,0.22)]"
         >
           {poster ? (
@@ -170,7 +173,7 @@ export default function ThumbnailButton({
             {title}
           </span>
           {credit ? (
-            <span className="text-[14px] leading-snug text-[#5a5a5e]">{credit}</span>
+            <span className="text-[14px] leading-snug text-[color:var(--ink-64)]">{credit}</span>
           ) : null}
         </div>
       </button>
