@@ -386,8 +386,10 @@ export const VIDEOS = [
    built of equal tiles rather than the wide-and-narrow mix the format allows
    — a wide tile would have to crop and enlarge a square to fill itself.
 
-   The captions say what is in the picture and no more. Where a name or an
-   occasion is not visible in the frame, it is not asserted here.
+   The captions speak of the people in them as the church's own — our members,
+   our women, our children — rather than counting them off as strangers in a
+   frame. What they claim is still only what is visible: where a name or an
+   occasion cannot be seen in the picture, it is not asserted here.
    ------------------------------------------------------------------ */
 
 export const FACEBOOK_PHOTOS = "https://www.facebook.com/GOFAMINTTORONTO/photos";
@@ -398,7 +400,7 @@ export const PHOTOS = [
     src: "/photos/outreach-team-in-the-lot.jpg",
     alt: "Five women in matching shirts standing together in a car park, a small girl beside them",
     title: "Out in the neighbourhood",
-    caption: "The team in the plaza, on the afternoon they went out",
+    caption: "Our members in the plaza, the afternoon they went out to meet it",
   },
   {
     id: "preaching",
@@ -412,7 +414,7 @@ export const PHOTOS = [
     src: "/photos/praise-with-hands-raised.jpg",
     alt: "Two women dancing in praise during a service, hands lifted",
     title: "Praise",
-    caption: "Two of them dancing where they stood",
+    caption: "Our people dancing where they stood",
   },
   {
     id: "writing",
@@ -426,14 +428,14 @@ export const PHOTOS = [
     src: "/photos/children-by-the-plaza-sign.jpg",
     alt: "Children and women gathered under a plaza sign on a grey afternoon",
     title: "The children who came",
-    caption: "Under the sign at the top of the plaza",
+    caption: "Our youngest, under the sign at the top of the plaza",
   },
   {
     id: "singing-red",
     src: "/photos/singing-in-red.jpg",
     alt: "A woman in a red top singing during a service, smiling",
     title: "Singing",
-    caption: "Mid-song, in the middle of the room",
+    caption: "A voice from the congregation, mid-song",
   },
   {
     id: "notes",
@@ -446,57 +448,57 @@ export const PHOTOS = [
     id: "three-women",
     src: "/photos/three-women-in-the-car-park.jpg",
     alt: "Three women standing shoulder to shoulder beside a van, smiling",
-    title: "Three of them",
-    caption: "Beside the van before setting out",
+    title: "Our women, before setting out",
+    caption: "Gathered beside the van, ready to go",
   },
   {
     id: "hand-lifted",
     src: "/photos/a-hand-lifted-in-worship.jpg",
     alt: "A woman in a patterned wrap with both hands lifted during worship",
     title: "Both hands up",
-    caption: "In the middle of the congregation",
+    caption: "Worship, from the middle of the congregation",
   },
   {
     id: "mother-son",
     src: "/photos/mother-and-son-at-the-shelter.jpg",
     alt: "A woman and a boy at a bus shelter, both making a peace sign",
     title: "At the bus shelter",
-    caption: "A stop along the way",
+    caption: "A mother and son from the church, a stop along the way",
   },
   {
     id: "blue-light",
     src: "/photos/preaching-under-the-blue-light.jpg",
     alt: "A man preaching at the lectern under blue stage light",
     title: "Under the blue light",
-    caption: "The platform, part way through",
+    caption: "The platform, part way through the service",
   },
   {
     id: "two-women",
     src: "/photos/two-women-seated-together.jpg",
     alt: "Two women seated side by side in a service, one in a headwrap, one in yellow",
     title: "Side by side",
-    caption: "Seated together through the service",
+    caption: "Church members seated together through the service",
   },
   {
     id: "flyers",
     src: "/photos/children-with-the-flyers.jpg",
     alt: "Children standing on the kerb holding flyers, in front of a plaza",
     title: "Handing them out",
-    caption: "Flyers, and the children who carried them",
+    caption: "Our children, and the flyers they carried",
   },
   {
     id: "pink-jacket",
     src: "/photos/listening-in-the-pink-jacket.jpg",
     alt: "A man in a pink checked jacket standing among the congregation",
     title: "Standing to listen",
-    caption: "Near the back of the room",
+    caption: "A member on his feet near the back of the room",
   },
   {
     id: "worship-red",
     src: "/photos/worshipping-in-red.jpg",
     alt: "A woman in a red top with one hand raised, singing",
     title: "One hand raised",
-    caption: "Somewhere in the middle of the singing",
+    caption: "Worship, somewhere in the middle of the singing",
   },
   {
     id: "notebook-phone",
@@ -509,43 +511,43 @@ export const PHOTOS = [
     id: "pavement",
     src: "/photos/the-group-on-the-pavement.jpg",
     alt: "A large group of women and children standing on a pavement in front of a plaza",
-    title: "All of them, on the pavement",
-    caption: "Before they went back in",
+    title: "Our church family, outside",
+    caption: "Together on the pavement, before they went back in",
   },
   {
     id: "standing",
     src: "/photos/standing-through-the-prayer.jpg",
     alt: "A man in a blue suit standing with his eyes closed during prayer",
     title: "Through the prayer",
-    caption: "Standing, eyes closed",
+    caption: "Standing with the congregation, eyes closed",
   },
   {
     id: "head-bowed",
     src: "/photos/head-bowed-in-the-red-chair.jpg",
     alt: "A young woman seated in a red chair with her head bowed",
     title: "Head bowed",
-    caption: "In one of the red chairs",
+    caption: "A member in prayer, in one of the red chairs",
   },
   {
     id: "two-writing",
     src: "/photos/two-of-them-writing.jpg",
     alt: "A man in white writing in a notebook, a woman beside him doing the same",
-    title: "Both of them writing",
-    caption: "Two rows, two notebooks",
+    title: "Two rows, two notebooks",
+    caption: "Members taking the message down as it came",
   },
   {
     id: "families",
     src: "/photos/the-families-who-came-out.jpg",
     alt: "Women and children posing together in a car park under a grey sky",
     title: "The families who came out",
-    caption: "In the car park, before the rain",
+    caption: "Our people together in the car park, under a grey sky",
   },
   {
     id: "headwrap",
     src: "/photos/seated-in-the-green-headwrap.jpg",
     alt: "A woman in a green headwrap seated in a service, others around her",
     title: "In the green headwrap",
-    caption: "Seated among the rest",
+    caption: "One of our women, seated among the congregation",
   },
   {
     id: "ministering",
@@ -559,6 +561,6 @@ export const PHOTOS = [
     src: "/photos/following-along-on-a-tablet.jpg",
     alt: "A man following the service on a tablet resting on his lap",
     title: "On a tablet",
-    caption: "The passage, read off a screen",
+    caption: "A member following the passage off a screen",
   },
 ] as const;
