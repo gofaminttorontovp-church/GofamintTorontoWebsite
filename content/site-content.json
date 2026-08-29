@@ -1,0 +1,322 @@
+{
+  "heroImage": "/cn_tower.webp",
+  "announcements": [
+    {
+      "id": "august",
+      "label": "August Declaration",
+      "image": "/august_declaration.jpeg",
+      "width": 1646,
+      "height": 2048,
+      "title": "August, Our Month of Glorious Jubilation",
+      "detail": "The declaration over the month, given by Pastor (Dr.) Elijah O. Abina, General Overseer of The Gospel Faith Mission International."
+    },
+    {
+      "id": "youth",
+      "label": "Youth: Back to School",
+      "image": "/youth.JPG",
+      "width": 1364,
+      "height": 2047,
+      "title": "Shine: Lights in the Classroom and Workplace",
+      "detail": "Back to school prayers and blessings with Gofamint Toronto Youth, on Matthew 5:14 to 16. August 29, 2026 at 10:00am EST, on Zoom. Meeting ID 807 789 4699."
+    },
+    {
+      "id": "mens",
+      "label": "Men's Conference",
+      "image": "/mens.jpg",
+      "width": 1079,
+      "height": 960,
+      "title": "The Mandate of a Kingdom Man",
+      "detail": "The 2nd Annual National Men's Conference, on Romans 12:11, with Pastor Sam Adusi and Pastor Adeyemi Sofolahan. Saturday, September 12, 2026 from 1:00pm to 4:00pm EST, on Zoom. Meeting ID 697 148 1978."
+    },
+    {
+      "id": "year",
+      "label": "Our Year of Good Success",
+      "image": "/Year_2026.jpg",
+      "width": 2048,
+      "height": 1241,
+      "title": "Our Year of Good Success",
+      "detail": "The anchor for the year: the Lord will perfect that which concerns me; your mercy, O Lord, endures forever; do not forsake the works of your hands."
+    }
+  ],
+  "serviceTimes": [
+    { "name": "Sunday Service", "when": "Sundays, 10:00am", "lead": true },
+    { "name": "Morning Prayer", "when": "Monday to Saturday, 6:15am" },
+    { "name": "Bible Study", "when": "Tuesdays, 7:00pm" },
+    { "name": "Prayer Meeting", "when": "Fridays, 7:00pm" }
+  ],
+  "upcomingEvents": [
+    { "date": "Aug 29", "title": "Shine: back to school", "time": "10:00am" },
+    { "date": "Sep 12", "title": "National Men's Conference", "time": "1:00pm" },
+    {
+      "date": "Nov 13",
+      "title": "Night of worship",
+      "time": "7:00pm",
+      "note": "Every Friday to December 25, in place of the Friday prayer meeting"
+    }
+  ],
+  "groups": [
+    {
+      "id": "pastor",
+      "group": "Pastor",
+      "name": "Pastor Sam Adusi",
+      "role": "Head Pastor",
+      "image": "/groups/pastor-sam-adusi.jpg",
+      "alt": "Pastor Sam Adusi outdoors in a dark suit and red tie",
+      "description": "Pastor Samuel Adusi leads Gofamint Toronto and preaches on Sunday mornings. If you are visiting for the first time, or you would like someone to pray with you, ask for him."
+    },
+    {
+      "id": "choir",
+      "group": "Choir",
+      "image": "/groups/choir.jpg",
+      "alt": "The choir gathered outside the church in blue",
+      "description": "The choir leads the singing on a Sunday morning, and at the conventions and conferences the church takes part in through the year. If you sing or play, say so after a service, and there is room."
+    },
+    {
+      "id": "men",
+      "group": "Men's Ministry",
+      "name": "Pastor Israel Sofolahan",
+      "image": "/groups/pastor-israel-sofolahan.jpg",
+      "alt": "Pastor Israel Sofolahan in a navy suit and gold tie",
+      "description": "The men meet to pray for one another and to talk plainly about work, marriage and fatherhood. Their largest gathering of the year is the National Men's Conference."
+    },
+    {
+      "id": "women",
+      "group": "Women's Ministry",
+      "name": "Deaconess Grace Adusi",
+      "image": "/groups/deaconess-grace-adusi.jpg",
+      "alt": "Deaconess Grace Adusi in a red hat and a red floral dress",
+      "description": "The women pray for the church and look after the people in it, from the mother with a newborn to the sister who arrived in Toronto last month. Whatever season you are in, you are welcome."
+    },
+    {
+      "id": "youth",
+      "group": "Youth",
+      "name": "Sister Ebunoluwa",
+      "image": "/groups/sister-ebunoluwa-sofolahan.jpg",
+      "alt": "Sister Ebunoluwa in a white shirt, outdoors on a bright day",
+      "description": "Students and young adults, meeting to study together and to work out what following Christ looks like in a classroom and a first job. Some of it happens on Zoom, so distance is no reason to stay away."
+    },
+    {
+      "id": "children",
+      "group": "Children's Ministry",
+      "name": "Ms. Obadaki",
+      "image": "/groups/ms-obadaki.jpg",
+      "alt": "Ms. Obadaki in a grey blazer at the Gofamint Canada convention",
+      "description": "The children are taught on a Sunday in a way that is theirs, rather than a shortened version of what the adults are given. Bring them. They are expected, not merely tolerated."
+    }
+  ],
+  "videos": [
+    {
+      "id": "kB-sr65Xg1k",
+      "kind": "Ministration",
+      "title": "Enough For Me",
+      "credit": "Victorious Voices, composed by Peterson Okopi"
+    },
+    {
+      "id": "784Nly_4TMc",
+      "kind": "Praise",
+      "title": "Powerful Praise in May"
+    },
+    {
+      "id": "4tNIVaYlA7U",
+      "kind": "Praise",
+      "title": "Ariaria Praise Medley"
+    },
+    {
+      "id": "tmmH6RgZJ4A",
+      "kind": "Ministration",
+      "title": "Omumi Wa Laye (He Kept Me Alive)",
+      "credit": "Victorious Voices, arranged by Dave Ugbor"
+    },
+    {
+      "id": "1_UekKxkpXc",
+      "kind": "Sermon",
+      "title": "The Landlord Is Coming",
+      "credit": "Pastor Sam Adusi"
+    },
+    {
+      "id": "M2_iT381aqk",
+      "kind": "Ministration",
+      "title": "Ore Ofe Sha",
+      "credit": "Victorious Voices, by Rotimikeys"
+    },
+    {
+      "id": "g5HWcpVXvS8",
+      "kind": "Sermon",
+      "title": "The Value of a Life",
+      "credit": "Pastor Israel Sofolahan"
+    },
+    {
+      "id": "S_xwLGZLG9o",
+      "kind": "Praise",
+      "title": "High Praise and Worship Medley"
+    },
+    {
+      "id": "BWvQgyQNUdc",
+      "kind": "Praise",
+      "title": "African Canadian Christmas Medley"
+    }
+  ],
+  "photos": [
+    {
+      "id": "outreach-team",
+      "src": "/photos/outreach-team-in-the-lot.jpg",
+      "alt": "Five women in matching shirts standing together in a car park, a small girl beside them",
+      "title": "Out in the neighbourhood",
+      "caption": "Our family in the plaza, the afternoon they went out to meet it"
+    },
+    {
+      "id": "preaching",
+      "src": "/photos/preaching-at-the-lectern.jpg",
+      "alt": "A young man preaching at a glass lectern, microphone in hand",
+      "title": "The word, preached",
+      "caption": "At the lectern, mid-sentence"
+    },
+    {
+      "id": "praise",
+      "src": "/photos/praise-with-hands-raised.jpg",
+      "alt": "Two women dancing in praise during a service, hands lifted",
+      "title": "Praise",
+      "caption": "Our people dancing where they stood"
+    },
+    {
+      "id": "writing",
+      "src": "/photos/writing-through-the-message.jpg",
+      "alt": "A woman in a green patterned dress writing in a notebook during a service",
+      "title": "Writing it down",
+      "caption": "A notebook open through the message"
+    },
+    {
+      "id": "children-sign",
+      "src": "/photos/children-by-the-plaza-sign.jpg",
+      "alt": "Children and women gathered under a plaza sign on a grey afternoon",
+      "title": "The children who came",
+      "caption": "Our youngest, under the sign at the top of the plaza"
+    },
+    {
+      "id": "singing-red",
+      "src": "/photos/singing-in-red.jpg",
+      "alt": "A woman in a red top singing during a service, smiling",
+      "title": "Singing",
+      "caption": "A voice from the congregation, mid-song"
+    },
+    {
+      "id": "notes",
+      "src": "/photos/notes-open-on-his-knee.jpg",
+      "alt": "A man in a dark suit and pink shirt writing in a notebook balanced on his knee",
+      "title": "Following along",
+      "caption": "Notebook on his knee, pen moving"
+    },
+    {
+      "id": "three-women",
+      "src": "/photos/three-women-in-the-car-park.jpg",
+      "alt": "Three women standing shoulder to shoulder beside a van, smiling",
+      "title": "Our women, before setting out",
+      "caption": "Gathered beside the van, ready to go"
+    },
+    {
+      "id": "hand-lifted",
+      "src": "/photos/a-hand-lifted-in-worship.jpg",
+      "alt": "A woman in a patterned wrap with both hands lifted during worship",
+      "title": "Both hands up",
+      "caption": "Worship, from the middle of the congregation"
+    },
+    {
+      "id": "blue-light",
+      "src": "/photos/preaching-under-the-blue-light.jpg",
+      "alt": "A man preaching at the lectern under blue stage light",
+      "title": "Under the blue light",
+      "caption": "The platform, part way through the service"
+    },
+    {
+      "id": "two-women",
+      "src": "/photos/two-women-seated-together.jpg",
+      "alt": "Two women seated side by side in a service, one in a headwrap, one in yellow",
+      "title": "Side by side",
+      "caption": "Our family seated together through the service"
+    },
+    {
+      "id": "flyers",
+      "src": "/photos/children-with-the-flyers.jpg",
+      "alt": "Children standing on the kerb holding flyers, in front of a plaza",
+      "title": "Handing them out",
+      "caption": "Our children, and the flyers they carried"
+    },
+    {
+      "id": "pink-jacket",
+      "src": "/photos/listening-in-the-pink-jacket.jpg",
+      "alt": "A man in a pink checked jacket standing among the congregation",
+      "title": "Standing to listen",
+      "caption": "One of our family on his feet near the back of the room"
+    },
+    {
+      "id": "worship-red",
+      "src": "/photos/worshipping-in-red.jpg",
+      "alt": "A woman in a red top with one hand raised, singing",
+      "title": "One hand raised",
+      "caption": "Worship, somewhere in the middle of the singing"
+    },
+    {
+      "id": "notebook-phone",
+      "src": "/photos/a-notebook-and-a-phone.jpg",
+      "alt": "A young woman writing in a notebook with her phone in her other hand",
+      "title": "Notebook and phone",
+      "caption": "Keeping up with the passage"
+    },
+    {
+      "id": "pavement",
+      "src": "/photos/the-group-on-the-pavement.jpg",
+      "alt": "A large group of women and children standing on a pavement in front of a plaza",
+      "title": "Our church family, outside",
+      "caption": "Together on the pavement, before they went back in"
+    },
+    {
+      "id": "standing",
+      "src": "/photos/standing-through-the-prayer.jpg",
+      "alt": "A man in a blue suit standing with his eyes closed during prayer",
+      "title": "Through the prayer",
+      "caption": "Standing with the congregation, eyes closed"
+    },
+    {
+      "id": "head-bowed",
+      "src": "/photos/head-bowed-in-the-red-chair.jpg",
+      "alt": "A young woman seated in a red chair with her head bowed",
+      "title": "Head bowed",
+      "caption": "Someone from our family in prayer, in one of the red chairs"
+    },
+    {
+      "id": "two-writing",
+      "src": "/photos/two-of-them-writing.jpg",
+      "alt": "A man in white writing in a notebook, a woman beside him doing the same",
+      "title": "Two rows, two notebooks",
+      "caption": "Our family taking the message down as it came"
+    },
+    {
+      "id": "families",
+      "src": "/photos/the-families-who-came-out.jpg",
+      "alt": "Women and children posing together in a car park under a grey sky",
+      "title": "The families who came out",
+      "caption": "Our people together in the car park, under a grey sky"
+    },
+    {
+      "id": "headwrap",
+      "src": "/photos/seated-in-the-green-headwrap.jpg",
+      "alt": "A woman in a green headwrap seated in a service, others around her",
+      "title": "In the green headwrap",
+      "caption": "One of our women, seated among the congregation"
+    },
+    {
+      "id": "ministering",
+      "src": "/photos/ministering-in-song.jpg",
+      "alt": "A woman singing into a microphone at the lectern",
+      "title": "Ministering in song",
+      "caption": "At the microphone, on the platform"
+    },
+    {
+      "id": "tablet",
+      "src": "/photos/following-along-on-a-tablet.jpg",
+      "alt": "A man following the service on a tablet resting on his lap",
+      "title": "On a tablet",
+      "caption": "One of ours, following the passage off a screen"
+    }
+  ]
+}
