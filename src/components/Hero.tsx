@@ -29,9 +29,15 @@ const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 // timeline keeps the old scroll units (205 → 520) so the phase maths below
 // read unchanged; the clock covers them in ANIM_MS with soft ramps at both
 // ends (trapezoidal velocity — even wing-beats through the middle).
+//
+// The performance used to run 16.7s, which was long enough that a visitor
+// waited on it. It now runs 9s. The saving is not taken evenly: the sprout,
+// the unwrap and the closing settle are roughly halved, "The Word" types in
+// well under half the time it did, and the flight itself — the part actually
+// worth watching — gives up the least in proportion.
 const ANIM_FROM = 205;
 const ANIM_TO = 505;
-const ANIM_MS = 16700;
+const ANIM_MS = 9000;
 const TRIGGER_S = 90; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
 
@@ -48,7 +54,7 @@ const FRAME_R = { start: 0, count: 35 }; // dove_001..035 — fly right
 const FRAME_T = { start: 35, count: 43 }; // dove_036..078 — turn right→left
 const FRAME_L = { start: 78, count: 14 }; // dove_079..092 — fly left
 const FLIGHT_FRAME_COUNT = 92;
-const FLAP_STEP_VH = 1.4; // virtual-clock distance per wing-beat frame (~13 fps)
+const FLAP_STEP_VH = 2.2; // virtual-clock distance per wing-beat frame (~17 fps)
 const TURN_HALF = 0.1; // half-width of a turn window, as a fraction of flight distance
 const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(3, "0")}.png`;
 
@@ -298,7 +304,7 @@ export default function Hero() {
         if (r.bottom > window.innerHeight + 10) {
           window.scrollTo({ top: window.scrollY + r.bottom, behavior: "smooth" });
         }
-      }, 1100);
+      }, 800);
     };
 
     const stopFlight = () => {
@@ -389,14 +395,17 @@ export default function Hero() {
   //         phase B (50 → 90): line retracts as "Toronto" is written.
   const pA = clamp01(S / 45);
   const pB = clamp01((S - 50) / 40);
-  // Act 2 — a ~16.7s performance on the virtual clock A (205 → 505): the
-  //         caret sprouts a white line (205 → 250) consumed into the flying
-  //         dove; the dove flies the spline (250 → 435); unwraps into a white
-  //         line (435 → 470); "The Word" types out briskly (470 → 496).
-  const pC = clamp01((A - 205) / 45);
-  const pD = clamp01((A - 250) / 185);
-  const pE = clamp01((A - 435) / 35);
-  const pT = clamp01((A - 470) / 26);
+  // Act 2 — a ~9s performance on the virtual clock A (205 → 505): the caret
+  //         sprouts a white line (205 → 232) consumed into the flying dove;
+  //         the dove flies the spline (232 → 462); unwraps into a white line
+  //         (462 → 486); "The Word" types out (486 → 501). Because the clock
+  //         ramps at both ends, those units are not seconds: they land at
+  //         about 1.25s of sprout, 6.1s of flight, 0.6s of unwrap and 0.55s
+  //         of typing, with half a second of settle behind it.
+  const pC = clamp01((A - 205) / 27);
+  const pD = clamp01((A - 232) / 230);
+  const pE = clamp01((A - 462) / 24);
+  const pT = clamp01((A - 486) / 15);
 
   // The head lays ink down through phase A, then the tail is consumed into
   // the word through phase B — both measured from the line's own start, so
@@ -450,7 +459,7 @@ export default function Hero() {
     turnEase = Math.sin(Math.PI * q);
   } else {
     const sec = dx >= 0 ? FRAME_R : FRAME_L;
-    const flap = Math.max(0, Math.floor((A - 250) / FLAP_STEP_VH));
+    const flap = Math.max(0, Math.floor((A - 232) / FLAP_STEP_VH));
     frameIdx = sec.start + (flap % sec.count);
   }
   const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1)) * (1 - turnEase);
@@ -469,9 +478,9 @@ export default function Hero() {
   // The welcome lockup bows out as the dove takes flight and returns to its
   // place as "The Word" types on; the closing sentence fades in ahead of the
   // landing.
-  const welcomeOpacity = Math.max(1 - fade(A, 255, 310), fade(A, 470, 496));
-  const line1Opacity = fade(A, 400, 430);
-  const line1Rise = (1 - fade(A, 400, 430)) * 20;
+  const welcomeOpacity = Math.max(1 - fade(A, 238, 306), fade(A, 486, 501));
+  const line1Opacity = fade(A, 418, 452);
+  const line1Rise = (1 - fade(A, 418, 452)) * 20;
   const { ink, base } = HERO_TREATMENTS[treatment];
   const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
   const caretWLeft = (pT * 100).toFixed(2) + "%";
