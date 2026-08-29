@@ -184,6 +184,9 @@ export const CONTACT = {
   emailHref: "mailto:gofaminttorontovp@gmail.com",
 } as const;
 
+/** The channel the video gallery draws from, and the mark in the footer row. */
+export const YOUTUBE_CHANNEL = "https://www.youtube.com/@gofamint-torontovp4833";
+
 /** The marks are drawn in the social-links component, keyed by `icon`. */
 export const SOCIALS = [
   {
@@ -201,7 +204,7 @@ export const SOCIALS = [
   {
     icon: "youtube",
     label: "YouTube",
-    href: "https://www.youtube.com/@gofamint-torontovp4833",
+    href: YOUTUBE_CHANNEL,
     color: "#FF0000",
   },
 ] as const;
@@ -298,5 +301,72 @@ export const GROUPS = [
     alt: "Ms. Obadaki in a grey blazer at the Gofamint Canada convention",
     description:
       "The children are taught on a Sunday in a way that is theirs, rather than a shortened version of what the adults are given. Bring them. They are expected, not merely tolerated.",
+  },
+] as const;
+
+/* ------------------------------------------------------------------
+   The YouTube gallery on the Media page.
+
+   Each entry is only an id and the words that go under the poster; the
+   poster itself is YouTube's own thumbnail for that id, so nothing has to be
+   exported, resized or committed here when a video is added. `kind` is the
+   small label above the title, and `credit` names whoever the video belongs
+   to — the preacher for a sermon, the singers for a ministration — and is
+   left off where the video is the whole congregation.
+
+   Newest at the top is not the order here; the row is arranged so the two
+   sermons fall where a visitor scanning the grid will meet them.
+   ------------------------------------------------------------------ */
+
+export const VIDEOS = [
+  {
+    id: "kB-sr65Xg1k",
+    kind: "Ministration",
+    title: "Enough For Me",
+    credit: "Victorious Voices, composed by Peterson Okopi",
+  },
+  {
+    id: "784Nly_4TMc",
+    kind: "Praise",
+    title: "Powerful Praise in May",
+  },
+  {
+    id: "4tNIVaYlA7U",
+    kind: "Praise",
+    title: "Ariaria Praise Medley",
+  },
+  {
+    id: "tmmH6RgZJ4A",
+    kind: "Ministration",
+    title: "Omumi Wa Laye (He Kept Me Alive)",
+    credit: "Victorious Voices, arranged by Dave Ugbor",
+  },
+  {
+    id: "1_UekKxkpXc",
+    kind: "Sermon",
+    title: "The Landlord Is Coming",
+    credit: "Pastor Sam Adusi",
+  },
+  {
+    id: "M2_iT381aqk",
+    kind: "Ministration",
+    title: "Ore Ofe Sha",
+    credit: "Victorious Voices, by Rotimikeys",
+  },
+  {
+    id: "g5HWcpVXvS8",
+    kind: "Sermon",
+    title: "The Value of a Life",
+    credit: "Pastor Israel Sofolahan",
+  },
+  {
+    id: "S_xwLGZLG9o",
+    kind: "Praise",
+    title: "High Praise and Worship Medley",
+  },
+  {
+    id: "BWvQgyQNUdc",
+    kind: "Praise",
+    title: "African Canadian Christmas Medley",
   },
 ] as const;
