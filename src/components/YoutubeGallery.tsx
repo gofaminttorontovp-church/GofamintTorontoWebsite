@@ -18,7 +18,7 @@ const ROWS = Array.from({ length: Math.ceil(VIDEOS.length / PER_ROW) }, (_, i) =
  */
 export default function YoutubeGallery() {
   return (
-    <section id="videos" className="section-dark grow overflow-x-clip px-6 py-20 md:px-8 md:py-24">
+    <section id="videos" className="section-dark overflow-x-clip px-6 py-20 md:px-8 md:py-24">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 md:gap-16">
         <header className="flex flex-col items-center gap-3 text-center">
           <div style={eyebrow}>MEDIA</div>

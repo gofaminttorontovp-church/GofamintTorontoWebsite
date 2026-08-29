@@ -376,3 +376,75 @@ export const VIDEOS = [
     title: "African Canadian Christmas Medley",
   },
 ] as const;
+
+/* ------------------------------------------------------------------
+   The photographs on the Media page.
+
+   STAND-INS. These are church photographs already in the repository, put
+   here so the row can be seen and judged. The section is meant to carry the
+   Facebook album, and Facebook cannot supply it directly: its image URLs are
+   signed and expire within days, it blocks hot-linking from other origins,
+   and the album itself answers a logged-out request with a login wall. The
+   photographs have to live in `public/photos/` like everything else the site
+   serves. Replace the entries below as the real ones are added; nothing else
+   has to change.
+
+   `wide` gives a landscape photograph twice the width in the row. Roughly one
+   in three reads best; a row of nothing but wide tiles is just a wide row.
+   ------------------------------------------------------------------ */
+
+export const FACEBOOK_PHOTOS = "https://www.facebook.com/GOFAMINTTORONTO/photos";
+
+export const PHOTOS = [
+  {
+    id: "choir",
+    src: "/groups/choir.jpg",
+    alt: "The choir gathered outside the church in blue",
+    title: "The choir, outside",
+    caption: "In blue, on the steps after a Sunday service",
+    wide: true,
+  },
+  {
+    id: "pastor",
+    src: "/groups/pastor-sam-adusi.jpg",
+    alt: "Pastor Sam Adusi outdoors in a dark suit and red tie",
+    title: "Pastor Sam Adusi",
+    caption: "Who preaches on a Sunday morning",
+  },
+  {
+    id: "grace",
+    src: "/groups/deaconess-grace-adusi.jpg",
+    alt: "Deaconess Grace Adusi in a red hat and a red floral dress",
+    title: "Deaconess Grace Adusi",
+    caption: "Who leads the women's ministry",
+  },
+  {
+    id: "skyline",
+    src: "/cn_tower.webp",
+    alt: "The Toronto skyline with the CN Tower",
+    title: "The city we are in",
+    caption: "Toronto, where the church has kept its doors since",
+    wide: true,
+  },
+  {
+    id: "israel",
+    src: "/groups/pastor-israel-sofolahan.jpg",
+    alt: "Pastor Israel Sofolahan in a navy suit and gold tie",
+    title: "Pastor Israel Sofolahan",
+    caption: "Who leads the men's ministry",
+  },
+  {
+    id: "ebunoluwa",
+    src: "/groups/sister-ebunoluwa-sofolahan.jpg",
+    alt: "Sister Ebunoluwa in a white shirt, outdoors on a bright day",
+    title: "Sister Ebunoluwa",
+    caption: "Who leads the youth",
+  },
+  {
+    id: "obadaki",
+    src: "/groups/ms-obadaki.jpg",
+    alt: "Ms. Obadaki in a grey blazer at the Gofamint Canada convention",
+    title: "Ms. Obadaki",
+    caption: "At the Gofamint Canada convention",
+  },
+] as const;
