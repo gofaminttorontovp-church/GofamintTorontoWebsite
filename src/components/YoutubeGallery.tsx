@@ -1,6 +1,13 @@
 import ThumbnailButton from "@/components/ui/thumbnail-button-video-player";
 import { eyebrow, h2, VIDEOS, YOUTUBE_CHANNEL } from "@/lib/site";
 
+/** How many videos stand across the grid, and so how many sit in each row. */
+const PER_ROW = 3;
+
+const ROWS = Array.from({ length: Math.ceil(VIDEOS.length / PER_ROW) }, (_, i) =>
+  VIDEOS.slice(i * PER_ROW, i * PER_ROW + PER_ROW),
+);
+
 /**
  * The video gallery: what has been recorded in service and posted, three
  * across on a laptop and one at a time on a phone.
@@ -39,21 +46,42 @@ export default function YoutubeGallery() {
           </a>
         </header>
 
-        {/* Three across from a laptop, two on a tablet, one on a phone. The
-            gap is wider than the cards' own radius so the row reads as three
-            separate videos rather than one strip. */}
-        <ul className="m-0 grid list-none grid-cols-1 gap-x-8 gap-y-10 p-0 sm:grid-cols-2 lg:grid-cols-3">
-          {VIDEOS.map((video) => (
-            <li key={video.id}>
-              <ThumbnailButton
-                youtubeId={video.id}
-                title={video.title}
-                kind={video.kind}
-                credit={"credit" in video ? video.credit : undefined}
-              />
-            </li>
+        {/* Three rows of three. On a laptop each row is a row of the grid,
+            and the three of them stacked read as one nine-up wall — the gap
+            down the page is the gap across it. On a phone nine videos is nine
+            screens of scrolling, so each row turns on its side and is swiped
+            through instead, the way the groups are on their own page.
+            `scroll-pl-6` is what keeps the first card aligned with the
+            heading above rather than flush to the edge of the screen, and
+            `-mx-6` with `px-6` lets the row itself run the full width. */}
+        <div className="flex flex-col gap-8 md:gap-y-10">
+          {ROWS.map((row) => (
+            <ul
+              key={row[0].id}
+              className="no-scrollbar -mx-6 m-0 flex list-none snap-x snap-mandatory scroll-pl-6 gap-4 overflow-x-auto px-6 pb-2
+                         md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-x-8 md:overflow-visible md:p-0"
+            >
+              {row.map((video) => (
+                <li
+                  key={video.id}
+                  /* 86% leaves the next card peeking, which is the only
+                     thing telling a visitor the row moves at all. On the wide
+                     phones and small tablets between the two breakpoints one
+                     card to a screen is a very large card, so there two ride
+                     abreast and the third is the one peeking. */
+                  className="w-[86%] shrink-0 snap-start sm:w-[46%] md:w-auto"
+                >
+                  <ThumbnailButton
+                    youtubeId={video.id}
+                    title={video.title}
+                    kind={video.kind}
+                    credit={"credit" in video ? video.credit : undefined}
+                  />
+                </li>
+              ))}
+            </ul>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );

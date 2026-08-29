@@ -127,7 +127,15 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
 
       <div
         className={cn(
-          "bg-background/90 fixed top-14 right-0 bottom-0 left-0 z-50 flex flex-col overflow-hidden border-y border-border backdrop-blur-lg md:hidden",
+          // `header-dark` re-points the token layer the same way the bar
+          // above does, so the panel is the black the bar is rather than the
+          // white it inherited from the page. It is a sibling of the header,
+          // not a child, so it cannot pick that up on its own.
+          // `text-foreground` is carried here, not left to the links: the
+          // unlayered `a { color: inherit }` in globals.css beats any colour
+          // utility on an anchor, so the panel has to be the one holding the
+          // colour they inherit.
+          "header-dark bg-background/90 text-foreground fixed top-14 right-0 bottom-0 left-0 z-50 flex flex-col overflow-hidden border-y border-border backdrop-blur-lg md:hidden",
           open ? "block" : "hidden",
         )}
       >
@@ -135,7 +143,10 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           data-slot={open ? "open" : "closed"}
           className={cn(
             "data-[slot=open]:animate-in data-[slot=open]:zoom-in-95 data-[slot=closed]:animate-out data-[slot=closed]:zoom-out-95 ease-out",
-            "flex h-full w-full flex-col justify-between gap-y-2 p-4",
+            // The buttons follow the links at the same interval the links
+            // keep between themselves. They used to be pushed to the foot of
+            // the screen, a third of a phone away from the thing above them.
+            "flex h-full w-full flex-col gap-y-2 p-4",
           )}
         >
           <div className="grid gap-y-2">
