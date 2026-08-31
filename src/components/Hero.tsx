@@ -196,23 +196,23 @@ export default function Hero({ start = true }: { start?: boolean }) {
 
   // Warm the flying-dove frames, and keep them warm.
   //
-  // The flight swaps the dove's `src` about sixteen times a second, and a
-  // browser decodes an image the first time it is asked to paint it. Fetching
-  // was never the problem — ninety-two frames are 422KB between them — but
-  // decoding ninety-two of them one at a time, mid-flight, is, and it lands as
-  // a stutter in the wingbeat.
+  // The array is held in a ref rather than left as a local, which is what it
+  // used to be: it fell out of scope the moment the effect returned, leaving
+  // the image objects free to be collected before the dove ever took off.
   //
-  // So each frame is decoded up front. And the array is held in a ref rather
-  // than left as a local, which is what it used to be: it fell out of scope
-  // the moment the effect returned, leaving the image objects, and the decoded
-  // bitmaps with them, free to be collected before the dove ever took off.
+  // Nothing here calls decode(). It was tried, on the reasoning that a browser
+  // decodes an image the first time it has to paint it and the flight asks for
+  // a new one sixteen times a second. But it is the one part of this that
+  // behaves differently on a reload — on a cold cache the ninety-two decodes
+  // are spread out by the network, and on a warm one they all fire at once —
+  // and the reload is where the bird was reported stopping. Unmeasured, and
+  // suspect on exactly the run that was broken, so it is gone.
   const framesRef = useRef<HTMLImageElement[]>([]);
   useEffect(() => {
     const imgs: HTMLImageElement[] = [];
     for (let i = 0; i < FLIGHT_FRAME_COUNT; i++) {
       const img = new Image();
       img.src = flightSrc(i);
-      if (img.decode) img.decode().catch(() => {});
       imgs.push(img);
     }
     framesRef.current = imgs;
@@ -630,7 +630,13 @@ export default function Hero({ start = true }: { start?: boolean }) {
         const over = (((nominal - target) % count) + count) % count;
         let steps = over * 2 <= count ? nominal - over : nominal + (count - over);
         while (steps < 1) steps += count;
-        step = (A1 - A0) / steps;
+        // A floor and a ceiling on the beat. Every size measured lands inside
+        // 10% of nominal so this never binds there; it is here so that a
+        // geometry nobody has looked at can never stretch a wingbeat far
+        // enough to read as the bird having stopped. Landing on the seam is
+        // worth a few percent, never a stall.
+        const fitted = (A1 - A0) / steps;
+        step = Math.min(FLAP_STEP_VH * 1.5, Math.max(FLAP_STEP_VH * 0.75, fitted));
       } else {
         // Too short to hold even one cycle — the sliver between two turns that
         // a phone's wrapped closing line can leave. There is no phasing to be
