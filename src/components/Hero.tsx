@@ -194,14 +194,31 @@ export default function Hero({ start = true }: { start?: boolean }) {
     ready: false,
   });
 
-  // Warm the flying-dove frames so the flight never flickers mid-scroll.
+  // Warm the flying-dove frames, and keep them warm.
+  //
+  // The flight swaps the dove's `src` about sixteen times a second, and a
+  // browser decodes an image the first time it is asked to paint it. Fetching
+  // was never the problem — ninety-two frames are 422KB between them — but
+  // decoding ninety-two of them one at a time, mid-flight, is, and it lands as
+  // a stutter in the wingbeat.
+  //
+  // So each frame is decoded up front. And the array is held in a ref rather
+  // than left as a local, which is what it used to be: it fell out of scope
+  // the moment the effect returned, leaving the image objects, and the decoded
+  // bitmaps with them, free to be collected before the dove ever took off.
+  const framesRef = useRef<HTMLImageElement[]>([]);
   useEffect(() => {
     const imgs: HTMLImageElement[] = [];
     for (let i = 0; i < FLIGHT_FRAME_COUNT; i++) {
       const img = new Image();
       img.src = flightSrc(i);
+      if (img.decode) img.decode().catch(() => {});
       imgs.push(img);
     }
+    framesRef.current = imgs;
+    return () => {
+      framesRef.current = [];
+    };
   }, []);
 
   useEffect(() => {

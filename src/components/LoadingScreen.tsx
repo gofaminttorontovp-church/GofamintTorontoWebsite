@@ -92,10 +92,15 @@ export default function LoadingScreen({ onDone }: { onDone: () => void }) {
   // and fail hydration outright, which is exactly what it did.
   const [show] = useState(() => {
     if (typeof window === "undefined") return true;
-    // Arriving at a section (/#mission from another page), or resuming a
-    // reload part-way down: the visitor is not at the top of the story, and
-    // a full-screen curtain would only be in their way.
-    if (window.location.hash || window.scrollY > 0) return false;
+    // Arriving at a section — /#mission from another page — is the one case
+    // that skips it: the visitor asked for a particular place, and a
+    // full-screen curtain would only be in the way of getting there.
+    //
+    // A reload is not that case, even though the browser restores the scroll
+    // position the hero's own closing glide left behind. Reloading the home
+    // page means asking for the home page again, so it opens the way it opens
+    // the first time — from the top, behind the count.
+    if (window.location.hash) return false;
     return !playedThisDocument;
   });
 
@@ -112,6 +117,25 @@ export default function LoadingScreen({ onDone }: { onDone: () => void }) {
       return;
     }
     playedThisDocument = true;
+
+    // Undo the browser's scroll restoration. Without this the count plays over
+    // a page already scrolled to the mission section, the hero performs to
+    // nobody, and the visitor scrolls back up into the middle of a flight.
+    // `manual` is what stops a late restore landing on top of the reset — the
+    // restore would otherwise arrive as a scroll event and dismiss the curtain
+    // through the handler below.
+    //
+    // It is put back to "auto" rather than to whatever was read here. The
+    // property lives on the session history entry and outlives the document,
+    // so a visitor who reloads or leaves during the second and a half the
+    // curtain is up would strand it on "manual" — and the next load would read
+    // that, "restore" it, and strand it for good. "auto" is the browser
+    // default, and nothing else on the site touches this.
+    const restoreScrollRestoration = () => {
+      if ("scrollRestoration" in history) history.scrollRestoration = "auto";
+    };
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const floorMs = reduced ? 400 : FLOOR_MS;
@@ -143,6 +167,7 @@ export default function LoadingScreen({ onDone }: { onDone: () => void }) {
       if (doneRef.current) return;
       doneRef.current = true;
       window.removeEventListener("scroll", onScroll);
+      restoreScrollRestoration();
       setFinished(true);
       onDone(); // the hero starts while the curtain is still dissolving
       fadeTimer = window.setTimeout(() => {
@@ -187,6 +212,7 @@ export default function LoadingScreen({ onDone }: { onDone: () => void }) {
       cancelAnimationFrame(raf);
       clearTimeout(fadeTimer);
       window.removeEventListener("scroll", onScroll);
+      restoreScrollRestoration();
     };
     // onDone is stable for the life of the page; the intro runs once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
