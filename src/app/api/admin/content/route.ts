@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { requireSession, isResponse, handleFailure, jsonError } from "@/lib/admin/api";
 import { assertEditBranch, baseBranch, readFile } from "@/lib/admin/github";
-import { CONTENT_FILE, validateContent } from "@/lib/admin/validate";
+import { CONTENT_FILE, stripRetired, validateContent } from "@/lib/admin/validate";
 
 export const runtime = "nodejs";
 
@@ -33,11 +33,13 @@ export async function GET(request: NextRequest) {
     }
     if (!text) return jsonError("The content file could not be found.", 404);
 
-    const content = JSON.parse(text) as unknown;
-    const error = validateContent(content);
+    const raw = JSON.parse(text) as unknown;
+    const error = validateContent(raw);
     if (error) return jsonError(`The content file has a problem: ${error}`, 500);
 
-    return NextResponse.json({ content, ref });
+    // Anything the site has stopped reading is dropped here rather than handed
+    // to the editor, so it is gone from the next thing saved.
+    return NextResponse.json({ content: stripRetired(raw), ref });
   } catch (error) {
     return handleFailure("load content", error);
   }

@@ -6,88 +6,106 @@ import { HERO_TREATMENTS } from "@/lib/site";
 import { useHeroTreatment } from "@/lib/use-hero-treatment";
 
 /**
- * Scroll-driven hero, ported from the Gofamint Toronto design.
+ * The hero: the choir singing behind the welcome.
  *
  * Act 1 — a brand-red line sweeps in above the headline, curves down beneath
  * it, then retracts into the word "Toronto", written letter-by-letter in red
  * under the static "Welcome to Gofamint" headline.
  *
- * Act 2 — once "Toronto" is written, a slow, self-playing performance takes
- * over: the typing caret sprouts back into a white line, which is consumed
- * into a white flying dove (frame-by-frame line art in /public/dove-flight).
- * The dove glides the hand-drawn spline, unwraps into a white line, and
- * types out "The Word" at the end of the closing sentence — then the page
- * gently carries the visitor on to the next section.
+ * The close — the sentence underneath fades up and "The Word" types itself out
+ * in white at the end of it. The page then stays where it is; moving it is the
+ * visitor's to do.
+ *
+ * There was a dove here. Ninety-two frames of line art flew a hand-drawn
+ * spline for eleven and a half seconds, banking through the turns, and it is
+ * gone: the background it was drawn over was a still photograph of the
+ * skyline, and the movement had to come from somewhere. It comes from the
+ * choir now. The frames are still in /public/dove-flight, unreferenced, if
+ * that decision is ever revisited.
+ *
+ * Both acts run on a clock rather than the scrollbar, so the hero is one
+ * screen tall and the page scrolls normally from the first flick. The clock
+ * starts when `start` turns true — the loading screen decides that — and not
+ * before the hero is actually in front of somebody.
  */
 
-const SCROLL_LENGTH_VH = 240;
-// Total scrollable distance (hero height minus the pinned viewport), in vh.
-// Act 1's phase boundaries are expressed in these units.
-const SCROLL_VH = SCROLL_LENGTH_VH - 100;
+// Act 1's phase boundaries are expressed in the scroll units the hero used to
+// be scrubbed by, and `act1Units` maps elapsed milliseconds onto them, so the
+// phase maths below reads as it did when a scrollbar supplied the number.
+const ACT1_DRAW_MS = 1600; // the line sweeps in and dives    (units  0 → 45)
+const ACT1_GAP_MS = 200; //   a beat before the word          (units 45 → 50)
+const ACT1_TYPE_MS = 1350; // "Toronto" is written            (units 50 → 90)
+const ACT1_MS = ACT1_DRAW_MS + ACT1_GAP_MS + ACT1_TYPE_MS;
 
-// Act 2 plays on its own clock once "Toronto" is written. Its virtual
-// timeline keeps the old scroll units (205 → 520) so the phase maths below
-// read unchanged; the clock covers them in ANIM_MS with soft ramps at both
-// ends (trapezoidal velocity — even wing-beats through the middle).
-//
-// The performance used to run 16.7s, which was long enough that a visitor
-// waited on it rather than watched it. It runs 11.5s. The saving is not taken
-// evenly, and two phases are deliberately not squeezed: the flight, which is
-// the part worth watching, and the unwrap, which is the line finding the
-// word and reads as hurried if it is rushed. The sprout, the typing and the
-// closing settle carry the cut.
-const ANIM_FROM = 205;
-const ANIM_TO = 505;
-const ANIM_MS = 11500;
-const TRIGGER_S = 90; // cue the performance the moment "Toronto" is written
-const RAMP = 0.12; // eased fraction of the clock at each end
+/** Elapsed milliseconds of Act 1 → the scroll unit the phase maths wants. */
+const act1Units = (ms: number) => {
+  if (ms < ACT1_DRAW_MS) {
+    // eased out, so the line arrives at the word rather than stopping at it
+    const k = ms / ACT1_DRAW_MS;
+    return 45 * (1 - (1 - k) * (1 - k));
+  }
+  if (ms < ACT1_DRAW_MS + ACT1_GAP_MS) return 45 + 5 * ((ms - ACT1_DRAW_MS) / ACT1_GAP_MS);
+  // the typing runs linear — letters should land at an even pace
+  return 50 + 40 * Math.min(1, (ms - ACT1_DRAW_MS - ACT1_GAP_MS) / ACT1_TYPE_MS);
+};
 
-// The line is drawn entirely in brand red, starting part-way along the curve —
-// the stretch before that carried the old white lead-in and is never inked.
+// The close runs 0 → 1 on its own clock behind Act 1: the sentence fades up
+// over the first stretch of it, then "The Word" types out.
+const CLOSE_MS = 2200;
+const CLOSE_TYPE_FROM = 0.45;
+const CLOSE_TYPE_TO = 0.8;
+
+// On the wide layout the line is drawn starting part-way along the curve — the
+// stretch before that carried the old white lead-in and is never inked. The
+// mobile line below was drawn to be inked end to end, so it skips nothing.
 const LINE_LEAD_IN = 0.25; // fraction of the curve skipped before the line starts
 
-// Flying-dove sprite frames (white line art on transparency) from the
-// turning-flight GIF, in three sections: a right-facing flap cycle, the full
-// right→left turn, and a left-facing flap cycle. Wherever the flight path
-// changes horizontal direction the turn section plays through (reversed for
-// left→right), so the bird visibly banks around instead of mirror-flipping.
-const FRAME_R = { start: 0, count: 35 }; // dove_001..035 — fly right
-const FRAME_T = { start: 35, count: 43 }; // dove_036..078 — turn right→left
-const FRAME_L = { start: 78, count: 14 }; // dove_079..092 — fly left
-const FLIGHT_FRAME_COUNT = 92;
-const FLAP_STEP_VH = 1.9; // virtual-clock distance per wing-beat frame (~16 fps)
-const TURN_HALF = 0.1; // half-width of a turn window, as a fraction of flight distance
-const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(3, "0")}.png`;
+/** Below the site's md breakpoint the hero uses the hand-drawn mobile line. */
+const MOBILE_MAX_W = 768;
 
-// Flight waypoints between the runtime-anchored start (where the dove
-// materialises below "Toronto") and end (where it unwraps into "The Word"),
-// as [x, y] fractions of the viewport — hand-drawn with the path tool.
-const FLIGHT_MIDS_NORM: [number, number][] = [
-  [0.758, 0.587],
-  [0.794, 0.471],
-  [0.731, 0.378],
-  [0.606, 0.404],
-  [0.475, 0.412],
-  [0.349, 0.438],
-  [0.235, 0.502],
-  [0.128, 0.573],
-  [0.06, 0.681],
-  [0.148, 0.753],
-  [0.275, 0.723],
-  [0.394, 0.671],
+/**
+ * The mobile line, drawn by hand on a phone and kept as fractions of the hero
+ * so it holds its shape at any size.
+ *
+ * The wide-screen line curves down and then hooks back up into "Toronto",
+ * which reads as tucking under the word on a laptop and as a wobble on a
+ * phone. This one sweeps out to the left edge instead and comes back in level
+ * with the word. There is no eighth point: the line has to finish where
+ * "Toronto" actually sits, and that is measured at runtime.
+ */
+const LINE_MOBILE_NORM: [number, number][] = [
+  [0.621, 0.298],
+  [0.533, 0.347],
+  [0.429, 0.391],
+  [0.325, 0.433],
+  [0.209, 0.471],
+  [0.11, 0.515],
+  [0.164, 0.565],
 ];
+
+/** Catmull-Rom through the points, emitted as cubics. */
+const splinePath = (pts: [number, number][]) => {
+  const n = (v: number) => v.toFixed(1);
+  if (pts.length < 2) return "M 0 0";
+  let d = "M " + n(pts[0][0]) + " " + n(pts[0][1]);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    d +=
+      " C " + n(p1[0] + (p2[0] - p0[0]) / 6) + " " + n(p1[1] + (p2[1] - p0[1]) / 6) +
+      " " + n(p2[0] - (p3[0] - p1[0]) / 6) + " " + n(p2[1] - (p3[1] - p1[1]) / 6) +
+      " " + n(p2[0]) + " " + n(p2[1]);
+  }
+  return d;
+};
 
 type PathState = {
   pathLine: string;
-  pathSprout: string;
-  pathUnwrap: string;
   lineLen: number;
-  sproutLen: number;
-  unwrapLen: number;
-  flightPts: [number, number][];
-  flightArc: number[];
-  turns: { u: number; dir: number }[];
-  doveW: number;
+  /** Fraction of the curve left blank before the ink starts. */
+  lead: number;
   ready: boolean;
 };
 
@@ -99,93 +117,38 @@ const fade = (v: number, a: number, b: number) => {
   return t * t * (3 - 2 * t);
 };
 
-/** Point on a Catmull-Rom spline through `pts`, u in [0, 1]. */
-const splineAt = (pts: [number, number][], u: number): [number, number] => {
-  const segs = pts.length - 1;
-  const s = Math.min(Math.max(u, 0), 0.9999) * segs;
-  const i = Math.floor(s);
-  const t = s - i;
-  const p0 = pts[i - 1] || pts[i];
-  const p1 = pts[i];
-  const p2 = pts[i + 1];
-  const p3 = pts[i + 2] || p2;
-  const c1x = p1[0] + (p2[0] - p0[0]) / 6;
-  const c1y = p1[1] + (p2[1] - p0[1]) / 6;
-  const c2x = p2[0] - (p3[0] - p1[0]) / 6;
-  const c2y = p2[1] - (p3[1] - p1[1]) / 6;
-  const mt = 1 - t;
-  return [
-    mt * mt * mt * p1[0] + 3 * mt * mt * t * c1x + 3 * mt * t * t * c2x + t * t * t * p2[0],
-    mt * mt * mt * p1[1] + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p2[1],
-  ];
-};
-
-/**
- * Map a distance fraction (0..1 of total flight length) to the spline
- * parameter, via the cumulative arc-length table — so equal clock time
- * covers equal on-screen distance and the flight speed never wavers.
- */
-const arcParam = (lut: number[], f: number): number => {
-  const totalLen = lut[lut.length - 1];
-  if (!totalLen) return f;
-  const target = clamp01(f) * totalLen;
-  let lo = 1;
-  let hi = lut.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (lut[mid] < target) lo = mid + 1;
-    else hi = mid;
-  }
-  const l0 = lut[lo - 1];
-  const l1 = lut[lo];
-  const frac = l1 > l0 ? (target - l0) / (l1 - l0) : 0;
-  return (lo - 1 + frac) / (lut.length - 1);
-};
-
-export default function Hero() {
+export default function Hero({ start = true }: { start?: boolean }) {
   const heroRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const trowRef = useRef<HTMLDivElement>(null);
-  const twRef = useRef<HTMLSpanElement>(null);
 
   const treatment = useHeroTreatment();
-  const [p, setP] = useState(0);
-  const [anim, setAnim] = useState(0); // Act 2 virtual clock; 0 = not started
+  // True from the moment the performance starts until it settles. While it is
+  // up, the geometry underneath it is left alone — see measure().
+  const playingRef = useRef(false);
+  const [s1, setS1] = useState(0); // Act 1 clock, in the old scroll units
+  const [close, setClose] = useState(0); // the closing clock, 0 → 1
   const [paths, setPaths] = useState<PathState>({
     pathLine: "M 0 0",
-    pathSprout: "M 0 0",
-    pathUnwrap: "M 0 0",
     lineLen: 1,
-    sproutLen: 1,
-    unwrapLen: 1,
-    flightPts: [],
-    flightArc: [],
-    turns: [],
-    doveW: 0,
+    lead: LINE_LEAD_IN,
     ready: false,
   });
 
-  // Warm the flying-dove frames so the flight never flickers mid-scroll.
+  // ---- where the line is drawn, measured off the laid-out headline ----
   useEffect(() => {
-    const imgs: HTMLImageElement[] = [];
-    for (let i = 0; i < FLIGHT_FRAME_COUNT; i++) {
-      const img = new Image();
-      img.src = flightSrc(i);
-      imgs.push(img);
-    }
-  }, []);
-
-  useEffect(() => {
-    const hero = heroRef.current;
-    const sticky = stickyRef.current;
+    const stage = stageRef.current;
     const trow = trowRef.current;
-    if (!hero) return;
 
-    let cur = { line: "", sprout: "", unwrap: "" };
+    let cur = "";
 
     const measure = () => {
-      if (!sticky || !trow) return;
-      const s = sticky.getBoundingClientRect();
+      if (!stage || !trow) return;
+      // Not while the performance is running: the line is mid-draw against
+      // these numbers, and a phone fires a resize on its own the moment its
+      // URL bar slides away.
+      if (playingRef.current) return;
+      const s = stage.getBoundingClientRect();
       const t = trow.getBoundingClientRect();
       const W = s.width;
       const H = s.height;
@@ -195,338 +158,197 @@ export default function Hero() {
       const ey = t.top - s.top + t.height * 0.58;
       const n = (v: number) => v.toFixed(1);
 
-      // The line enters from the upper right — where the dove drawing used to
-      // hand the stroke over — and curves down and left into "Toronto".
+      // Two lines, because one shape cannot serve both. On the wide layout it
+      // enters from the upper right and curves down and left into "Toronto";
+      // on a phone it takes the drawn route out to the left and back in.
+      const mobile = W < MOBILE_MAX_W;
       const startX = 0.67 * W + 0.007 * Math.min(W, H);
       const startY = 0.13 * H + 0.147 * Math.min(W, H);
-      const lineCmds =
-        "M " + n(startX) + " " + n(startY) +
-        " C " + n(startX - 0.02 * W) + " " + n(startY + 0.1 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
-        " C " + n(0.3 * W) + " " + n(0.58 * H) + " " + n(ex - 0.08 * W) + " " + n(ey + 0.04 * H) + " " + n(ex) + " " + n(ey);
+      const pathLine = mobile
+        ? splinePath([...LINE_MOBILE_NORM.map(([mx, my]) => [mx * W, my * H] as [number, number]), [ex, ey]])
+        : "M " + n(startX) + " " + n(startY) +
+          " C " + n(startX - 0.02 * W) + " " + n(startY + 0.1 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
+          " C " + n(0.3 * W) + " " + n(0.58 * H) + " " + n(ex - 0.08 * W) + " " + n(ey + 0.04 * H) + " " + n(ex) + " " + n(ey);
+      const lead = mobile ? 0 : LINE_LEAD_IN;
 
-      // Act 2 geometry — the sprout line grows out of the parked caret (right
-      // edge of "Toronto"), flicks outward, and hooks into the point where
-      // the flying dove materialises.
-      const tw = twRef.current;
-      const w2 = tw ? tw.getBoundingClientRect() : null;
-      const sx = t.right - s.left; // caret parks at 100% of the "Toronto" row
-      const sy = t.top - s.top + t.height * 0.58;
-      const wx = w2 ? w2.left - s.left + 4 : 0.56 * W; // left edge of "The Word"
-      const wy = w2 ? w2.top - s.top + w2.height * 0.58 : 0.7 * H;
-      const dsx = sx + 0.02 * W;
-      const dsy = sy + 0.06 * H;
-      const sproutCmds =
-        "M " + n(sx) + " " + n(sy) +
-        " C " + n(sx + 0.05 * W) + " " + n(sy + 0.005 * H) + " " + n(sx + 0.075 * W) + " " + n(sy + 0.035 * H) + " " + n(sx + 0.05 * W) + " " + n(sy + 0.055 * H) +
-        " C " + n(sx + 0.03 * W) + " " + n(sy + 0.07 * H) + " " + n(dsx - 0.03 * W) + " " + n(dsy - 0.025 * H) + " " + n(dsx) + " " + n(dsy);
-      // Flight path: runtime-anchored start and end with the drawn waypoints
-      // between. The flight ends hovering just up-left of "The Word".
-      const fex = wx - 0.12 * W;
-      const fey = wy - 0.11 * H;
-      const flightPts: [number, number][] = [
-        [dsx, dsy],
-        ...FLIGHT_MIDS_NORM.map(([mx, my]) => [mx * W, my * H] as [number, number]),
-        [fex, fey],
-      ];
-      // Sample the spline once for two things: a cumulative arc-length table
-      // (so the flight runs at constant on-screen speed) and the spots where
-      // the horizontal direction flips — each becomes a window where the
-      // turn frames play (dir +1 = right→left). Turn positions are stored as
-      // distance fractions to match the constant-speed playhead.
-      const ARC_N = 240;
-      const flightArc: number[] = [0];
-      const turns: { u: number; dir: number }[] = [];
-      let prevPt = splineAt(flightPts, 0);
-      let prevDx = 0;
-      for (let i = 1; i <= ARC_N; i++) {
-        const pt = splineAt(flightPts, i / ARC_N);
-        flightArc.push(flightArc[i - 1] + Math.hypot(pt[0] - prevPt[0], pt[1] - prevPt[1]));
-        const d = pt[0] - prevPt[0];
-        if (Math.abs(d) >= 0.0004 * W) {
-          if (prevDx !== 0 && Math.sign(d) !== Math.sign(prevDx)) {
-            turns.push({ u: (flightArc[i - 1] + flightArc[i]) / 2, dir: prevDx > 0 ? 1 : -1 });
-          }
-          prevDx = d;
-        }
-        prevPt = pt;
+      if (pathLine === cur) return;
+      cur = pathLine;
+
+      let lineLen = 0;
+      try {
+        const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        probe.setAttribute("d", pathLine);
+        lineLen = probe.getTotalLength();
+      } catch {
+        lineLen = 0;
       }
-      const flightLen = flightArc[ARC_N] || 1;
-      for (const tn of turns) tn.u /= flightLen;
-      // Unwrap line: the white thread the dove spools out, hooking into the
-      // left edge of "The Word" where the typing caret picks it up.
-      const unwrapCmds =
-        "M " + n(fex) + " " + n(fey) +
-        " C " + n(fex + 0.025 * W) + " " + n(fey + 0.055 * H) + " " + n(wx - 0.09 * W) + " " + n(wy - 0.012 * H) + " " + n(wx) + " " + n(wy);
-      const doveW = 0.3 * Math.min(W, H);
-
-      // three INDEPENDENT sub-paths so coloring never depends on draw order:
-      // the Act 1 line (red), then the Act 2 sprout and unwrap (both white).
-      const pathLine = lineCmds;
-      const pathSprout = sproutCmds;
-      const pathUnwrap = unwrapCmds;
-      if (pathLine === cur.line && pathSprout === cur.sprout && pathUnwrap === cur.unwrap) return;
-      cur = { line: pathLine, sprout: pathSprout, unwrap: pathUnwrap };
-
-      const measureLen = (str: string) => {
-        try {
-          const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
-          probe.setAttribute("d", str);
-          return probe.getTotalLength();
-        } catch {
-          return 0;
-        }
-      };
-      const lineLen = measureLen(pathLine) || 1;
-      const sproutLen = measureLen(pathSprout) || 1;
-      const unwrapLen = measureLen(pathUnwrap) || 1;
-      setPaths((prev) => ({ ...prev, pathLine, pathSprout, pathUnwrap, lineLen, sproutLen, unwrapLen, flightPts, flightArc, turns, doveW }));
+      setPaths((prev) => ({ ...prev, pathLine, lineLen: lineLen || 1, lead }));
     };
 
-    // ---- Act 2 flight: a one-shot, time-driven performance cued by scroll ----
-    const fl = { raf: 0, timer: 0, playing: false, done: false, advanced: false };
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
 
-    // Trapezoidal clock: gentle ramps at both ends, constant through the
-    // middle so the glide and wing-beat stay even.
-    const easeClock = (k: number) => {
-      const v = 1 / (1 - RAMP);
-      if (k < RAMP) return (v * k * k) / (2 * RAMP);
-      if (k > 1 - RAMP) return 1 - (v * (1 - k) * (1 - k)) / (2 * RAMP);
-      return v * (k - RAMP / 2);
+    // Two passes, because the line is drawn to where "Toronto" actually sits:
+    // once the layout has settled, and again once the display font has swapped
+    // in and the word has taken its real width.
+    const t = setTimeout(() => {
+      measure();
+      setPaths((prev) => ({ ...prev, ready: true }));
+    }, 60);
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure);
+    }
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(t);
     };
+  }, []);
 
-    const finishFlight = (advance: boolean) => {
-      fl.playing = false;
-      fl.done = true;
-      if (!advance || fl.advanced) return;
-      fl.advanced = true;
-      // let "The Word" land for a beat, then glide on to the next section
-      fl.timer = window.setTimeout(() => {
-        const r = hero.getBoundingClientRect();
-        if (r.bottom > window.innerHeight + 10) {
-          window.scrollTo({ top: window.scrollY + r.bottom, behavior: "smooth" });
-        }
-      }, 800);
-    };
+  // ---- the performance: Act 1 on its own clock, the close behind it ----
+  useEffect(() => {
+    const hero = heroRef.current;
+    // Nothing starts before the geometry exists. The line is drawn to where
+    // "Toronto" actually sits, and starting ahead of the first measure gives
+    // the performance a blank stage to open on.
+    if (!hero || !start || !paths.ready) return;
 
-    const stopFlight = () => {
-      cancelAnimationFrame(fl.raf);
-      fl.playing = false;
-      fl.done = false;
-      setAnim(0);
-    };
+    const fl = { raf: 0 };
 
-    const startFlight = () => {
-      if (fl.playing || fl.done) return;
-      fl.playing = true;
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        // skip straight to the final tableau; no auto-scroll either
-        setAnim(ANIM_TO);
-        finishFlight(false);
-        return;
-      }
-      // Accumulate clamped deltas rather than measuring from an absolute
-      // start, so a hidden tab pauses the performance instead of skipping it.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Straight to the final tableau — the whole story, none of the movement.
+      setS1(90);
+      setClose(1);
+      return;
+    }
+
+    // Both clocks accumulate clamped deltas rather than measuring against an
+    // absolute start, so a hidden tab pauses the performance instead of
+    // skipping through it.
+    const run = (durationMs: number, onTick: (k: number) => void, onEnd: () => void) => {
       let elapsed = 0;
       let last = 0;
       const step = (now: number) => {
         if (last) elapsed += Math.min(now - last, 100);
         last = now;
-        const k = Math.min(1, elapsed / ANIM_MS);
-        setAnim(ANIM_FROM + easeClock(k) * (ANIM_TO - ANIM_FROM));
+        const k = Math.min(1, elapsed / durationMs);
+        onTick(k);
         if (k < 1) fl.raf = requestAnimationFrame(step);
-        else finishFlight(true);
+        else onEnd();
       };
       fl.raf = requestAnimationFrame(step);
     };
 
-    const update = () => {
-      const r = hero.getBoundingClientRect();
-      const total = hero.offsetHeight - window.innerHeight;
-      const next = Math.max(0, Math.min(1, total > 0 ? -r.top / total : 1));
-      setP((prev) => (Math.abs(next - prev) > 0.0004 || (next !== prev && (next === 0 || next === 1)) ? next : prev));
-      const sNow = next * SCROLL_VH;
-      if (sNow >= TRIGGER_S) {
-        startFlight();
-      } else if (fl.playing && sNow < 70) {
-        stopFlight(); // scrolled well away mid-performance — abort and re-arm
-      } else if (fl.done && sNow < 20) {
-        fl.done = false; // back near the top: reset so the story can replay
-        setAnim(0);
-      }
+    const begin = () => {
+      playingRef.current = true;
+      run(
+        ACT1_MS,
+        (k) => setS1(act1Units(k * ACT1_MS)),
+        () => {
+          setS1(90);
+          run(CLOSE_MS, setClose, () => {
+            // Done performing: the page may resize the hero again, and the
+            // final tableau should follow it. The page itself stays where it
+            // is — the visitor moves it.
+            playingRef.current = false;
+          });
+        },
+      );
     };
 
-    const onScroll = () => update();
-    const onResize = () => {
-      measure();
-      update();
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-
-    const t = setTimeout(() => {
-      measure();
-      update();
-      setPaths((prev) => ({ ...prev, ready: true }));
-    }, 60);
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => {
-        measure();
-        update();
-      });
+    // Play it to somebody. A reload restores the scroll position the closing
+    // glide left behind, which can put the visitor below a hero they have not
+    // watched yet — and the performance would spend itself off-screen, leaving
+    // them whatever was still running when they scrolled back up. It waits
+    // until the hero is actually in front of them, which is the one good habit
+    // the old scroll-driven version had for free.
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver === "undefined") {
+      begin();
+    } else {
+      io = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+          io?.disconnect();
+          io = null;
+          begin();
+        },
+        { threshold: 0.5 },
+      );
+      io.observe(hero);
     }
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      clearTimeout(t);
+      io?.disconnect();
       cancelAnimationFrame(fl.raf);
-      clearTimeout(fl.timer);
+      playingRef.current = false;
     };
-  }, []);
+  }, [start, paths.ready]);
 
-  // ---- derived render values (was renderVals) ----
-  const { pathLine, pathSprout, pathUnwrap, lineLen, sproutLen, unwrapLen, flightPts, flightArc, turns, doveW, ready } = paths;
+  // ---- derived render values ----
+  const { pathLine, lineLen, lead: leadFrac, ready } = paths;
 
-  // Scroll drives Act 1; the self-playing flight clock drives Act 2.
-  const S = p * SCROLL_VH;
-  const A = anim;
+  // Two clocks, one story: Act 1's runs first, the close picks up behind it.
+  const S = s1;
+  const C = close;
 
   // Act 1 — phase A (0 → 45): line draws in, then dives under the headline.
   //         phase B (50 → 90): line retracts as "Toronto" is written.
   const pA = clamp01(S / 45);
   const pB = clamp01((S - 50) / 40);
-  // Act 2 — an 11.5s performance on the virtual clock A (205 → 505): the
-  //         caret sprouts a white line (205 → 222) consumed into the flying
-  //         dove; the dove flies the spline (222 → 444); unwraps into a white
-  //         line (444 → 493); "The Word" types out (493 → 502.5). Because the
-  //         clock ramps at both ends these units are not seconds — they were
-  //         solved backwards from the wanted durations, and land at 1.26s of
-  //         sprout, 7.49s of flight, 1.69s of unwrap and 0.57s of typing,
-  //         with half a second of settle behind it.
-  const pC = clamp01((A - 205) / 17);
-  const pD = clamp01((A - 222) / 222);
-  const pE = clamp01((A - 444) / 49);
-  const pT = clamp01((A - 493) / 9.5);
 
   // The head lays ink down through phase A, then the tail is consumed into
   // the word through phase B — both measured from the line's own start, so
   // the skipped lead-in stays blank throughout.
-  const lead = LINE_LEAD_IN * lineLen;
+  const lead = leadFrac * lineLen;
   const headL = pA * (lineLen - lead);
   const tailL = pB * headL;
   const bigL = (lineLen * 2 + 10).toFixed(1);
   const dashLine = headL <= tailL ? "0 " + bigL : "0 " + (lead + tailL).toFixed(1) + " " + (headL - tailL).toFixed(1) + " " + bigL;
 
-  // The caret holds after typing, then dissolves as the sprout line grows.
+  // The red caret holds after typing, then dissolves as the close begins.
   let caretOpacity = 0;
-  if (S > 50) caretOpacity = pB < 1 ? 1 : 1 - clamp01(pC / 0.18);
+  if (S > 50) caretOpacity = pB < 1 ? 1 : 1 - clamp01(C / 0.12);
 
   const clip = "inset(0 " + ((1 - pB) * 100).toFixed(2) + "% 0 0)";
   const caretLeft = (pB * 100).toFixed(2) + "%";
-  const hintOpacity = clamp01(1 - S / 8);
 
-  // Sprout line: the head advances out of the caret, then the tail is
-  // consumed into the head — the line "becomes" the dove.
-  const headC = clamp01(pC / 0.6) * sproutLen;
-  const tailC = clamp01((pC - 0.5) / 0.5) * headC;
-  const bigC = (sproutLen * 2 + 10).toFixed(1);
-  const dashSprout = headC <= tailC ? "0 " + bigC : "0 " + tailC.toFixed(1) + " " + (headC - tailC).toFixed(1) + " " + bigC;
+  // The hint fades in behind the opening line and then stays. It used to step
+  // aside as the close landed, because the page was about to carry the visitor
+  // down by itself; nothing does that now, so it is the only thing telling
+  // them there is more underneath.
+  const hintOpacity = fade(S, 6, 30);
 
-  // Flying dove: the playhead pD is a distance fraction — arcParam converts
-  // it to the spline parameter so the bird covers equal distance per tick,
-  // one clean constant-speed flight. Materialise in phase C, unwrap in E.
-  const hasFlight = flightPts.length > 1 && flightArc.length > 1;
-  const uMid = hasFlight ? arcParam(flightArc, pD) : 0;
-  const uPrev = hasFlight ? arcParam(flightArc, Math.max(0, pD - 0.02)) : 0;
-  const uNext = hasFlight ? arcParam(flightArc, Math.min(1, pD + 0.02)) : 0;
-  const [fx, fy] = hasFlight ? splineAt(flightPts, uMid) : [0, 0];
-  const [bx, by] = hasFlight ? splineAt(flightPts, uPrev) : [0, 0];
-  const [ax, ay] = hasFlight ? splineAt(flightPts, uNext) : [0, 0];
-  const dx = ax - bx;
-  const dy = ay - by;
-  // Frame choice: inside a turn window the turn section scrubs through
-  // (forward for right→left, reversed for left→right); elsewhere the
-  // direction of travel picks which flap cycle loops.
-  let activeTurn: { u: number; dir: number } | null = null;
-  for (const tn of turns) {
-    if (pD > 0 && pD < 1 && Math.abs(pD - tn.u) < TURN_HALF) activeTurn = tn;
-  }
-  let frameIdx: number;
-  let turnEase = 0; // 1 at the heart of a turn — damps the path-tilt
-  if (activeTurn) {
-    const q = clamp01((pD - (activeTurn.u - TURN_HALF)) / (2 * TURN_HALF));
-    const qq = activeTurn.dir > 0 ? q : 1 - q;
-    frameIdx = FRAME_T.start + Math.min(FRAME_T.count - 1, Math.floor(qq * FRAME_T.count));
-    turnEase = Math.sin(Math.PI * q);
-  } else {
-    const sec = dx >= 0 ? FRAME_R : FRAME_L;
-    const flap = Math.max(0, Math.floor((A - 222) / FLAP_STEP_VH));
-    frameIdx = sec.start + (flap % sec.count);
-  }
-  const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1)) * (1 - turnEase);
-  // The bird dissolves along its final approach — ~90% gone as the unwrap
-  // line starts — and the last trace clears in the first beat of the unwrap.
-  const doveOpacity = fade(pC, 0.55, 1) * (1 - 0.9 * fade(pD, 0.85, 1)) * (1 - fade(pE, 0, 0.3));
-  const doveScale = 1 - 0.25 * fade(pD, 0.85, 1);
-
-  // Unwrap line: the head spools out of the fading dove toward the word,
-  // then the tail is consumed into it as the letters type.
-  const headU = clamp01(pE / 0.9) * unwrapLen;
-  const tailU = clamp01(pT * 1.05) * headU;
-  const bigU = (unwrapLen * 2 + 10).toFixed(1);
-  const dashUnwrap = headU <= tailU ? "0 " + bigU : "0 " + tailU.toFixed(1) + " " + (headU - tailU).toFixed(1) + " " + bigU;
-
-  // The welcome lockup bows out as the dove takes flight and returns to its
-  // place as "The Word" types on; the closing sentence fades in ahead of the
-  // landing.
-  const welcomeOpacity = Math.max(1 - fade(A, 228, 293), fade(A, 493, 502.5));
-  const line1Opacity = fade(A, 402, 434);
-  const line1Rise = (1 - fade(A, 402, 434)) * 20;
-  const { ink, base } = HERO_TREATMENTS[treatment];
+  // The closing sentence rises into place, then "The Word" types out at the
+  // end of it in white.
+  const line1Opacity = fade(C, 0.02, 0.4);
+  const line1Rise = (1 - line1Opacity) * 20;
+  const pT = clamp01((C - CLOSE_TYPE_FROM) / (CLOSE_TYPE_TO - CLOSE_TYPE_FROM));
   const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
   const caretWLeft = (pT * 100).toFixed(2) + "%";
   let caretWOpacity = 0;
-  if (A > 468) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((A - 499) / 6);
+  if (C > CLOSE_TYPE_FROM - 0.05) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((C - CLOSE_TYPE_TO) / 0.12);
+
+  const { ink, base } = HERO_TREATMENTS[treatment];
 
   return (
-    <div ref={heroRef} id="top" style={{ height: `${SCROLL_LENGTH_VH}vh`, position: "relative", background: "#7EC8EF" }}>
-      <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
+    <div ref={heroRef} id="top" style={{ height: "100vh", position: "relative", background: "#7EC8EF" }}>
+      <div ref={stageRef} style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         <HeroBackdrop treatment={treatment} />
 
-        {/* the sky settles into the logo's deep indigo at the base */}
+        {/* the choir settles into the deep indigo at the base */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: `linear-gradient(to bottom, rgba(${base}, 0) 0%, rgba(${base}, 0.22) 62%, rgb(${base}) 100%)`, pointerEvents: "none" }} />
 
-        {/* the red line, drawn by scroll: enters above the headline and dives under it */}
+        {/* the red line: enters above the headline and dives under it */}
         {ready && (
           <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none", overflow: "visible" }}>
             <path d={pathLine} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashLine }} />
-            <path d={pathSprout} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashSprout }} />
-            <path d={pathUnwrap} style={{ fill: "none", stroke: "#ffffff", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashUnwrap }} />
           </svg>
         )}
 
-        {/* the flying dove — frame-by-frame line art riding the flight spline */}
-        {ready && hasFlight && doveOpacity > 0 && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={flightSrc(frameIdx)}
-            alt=""
-            style={{
-              position: "absolute",
-              left: fx,
-              top: fy,
-              width: doveW,
-              transform: `translate(-50%, -50%) rotate(${doveRot.toFixed(1)}deg) scale(${doveScale.toFixed(3)})`,
-              opacity: doveOpacity,
-              zIndex: 2,
-              pointerEvents: "none",
-            }}
-          />
-        )}
-
-        {/* centered title lockup — bows out as the dove takes flight */}
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: welcomeOpacity }}>
+        {/* centered title lockup */}
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
           <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "clamp(44px, 7vw, 92px)", fontWeight: 600, letterSpacing: "0", lineHeight: 1.1, color: ink, textAlign: "center", padding: "0 16px" }}>Welcome to Gofamint</h1>
           <div ref={trowRef} style={{ position: "relative", marginTop: 4, padding: "0 16px" }}>
             {/* invisible sizing copy keeps the layout stable */}
@@ -540,12 +362,11 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* closing lockup — one line; the dove unwraps into a white thread
-            that types "The Word" at the end of the sentence. Always rendered
-            (opacity-driven) so measure() can find it. */}
+        {/* closing lockup — the sentence rises, then "The Word" types out.
+            Always rendered (opacity-driven) so the layout never shifts. */}
         <div style={{ position: "absolute", left: 0, right: 0, top: "66%", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "baseline", columnGap: "0.4em", rowGap: 6, zIndex: 2, textAlign: "center", padding: "0 16px", pointerEvents: "none", fontFamily: "var(--font-display)", fontSize: "clamp(29px, 4.2vw, 58px)", letterSpacing: "0", lineHeight: 1.15 }}>
           <span style={{ fontWeight: 600, color: ink, opacity: line1Opacity, transform: `translateY(${line1Rise.toFixed(1)}px)` }}>We Teach, Preach and Live</span>
-          <span ref={twRef} style={{ position: "relative", fontWeight: 700 }}>
+          <span style={{ position: "relative", fontWeight: 700 }}>
             {/* invisible sizing copy keeps the layout stable */}
             <span style={{ visibility: "hidden" }}>The Word</span>
             {ready && (

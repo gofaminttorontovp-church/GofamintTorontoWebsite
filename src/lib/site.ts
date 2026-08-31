@@ -64,31 +64,39 @@ export type HeroTreatment = "shafts" | "photo" | "mono" | "dark";
 export const HERO_BACKDROP: HeroTreatment = "dark";
 
 /**
- * The skyline photograph. `flip` mirrors it horizontally — the aerial shot
- * has the CN tower on the left, and the headline wants that side clear.
- * `position` is the object-position, biased so the tower survives the crop
- * on a narrow screen.
+ * The choir, singing — what the hero plays behind the welcome, and the only
+ * backdrop it has. The skyline photograph the treatments were first written
+ * against is gone, along with the editable "home page backdrop" that pointed
+ * at it: the hero stopped reading that field when this clip arrived, and a
+ * control in /admin that changes nothing is worse than no control.
+ *
+ * The clip carries no audio track — it was stripped rather than muted, so
+ * there is nothing to unmute and nothing to download — and it is encoded with
+ * the index at the front so it starts on the first chunk instead of the last.
+ *
+ * `poster` is a still from three seconds in. It stands in before the video can
+ * play, and it is the whole backdrop for a visitor who has asked for reduced
+ * motion.
  */
-export const HERO_PHOTO = {
-  // The file itself is editable from /admin (content/site-content.json);
-  // the flip and the crop bias stay design decisions, made here.
-  src: SITE_CONTENT.heroImage,
-  flip: false,
-  // Biased right of centre: on a narrow screen a 16:9 photo loses most of its
-  // width to the crop, and this keeps the tower inside what survives.
-  position: "62% 50%",
+export const HERO_VIDEO = {
+  src: "/home-video.mp4",
+  poster: "/home-video-poster.jpg",
+  // Faces sit a little above the middle of the frame, and a tall phone crops
+  // a 16:9 clip hard, so the crop is biased up to keep them in what survives.
+  position: "50% 42%",
 };
 
 /**
- * Per-treatment surface. `filter` works the photograph itself; `veil` is the
+ * Per-treatment surface. `filter` works the footage itself; `veil` is the
  * wash laid over it; `ink` is the colour the headline and closing line take,
  * since a night sky and a dusk sky do not want the same type; `base` is the
  * colour the foot of the hero settles into on its way to the next section —
- * the logo's indigo for the colour treatments, neutral for the grayscale one.
+ * #1e123b for the colour treatments, neutral for the grayscale one. It was
+ * the logo's indigo, #281068, which read too blue against the choir.
  */
 export const HERO_TREATMENTS = {
   photo: {
-    base: "40, 16, 104",
+    base: "30, 18, 59",
     filter: "saturate(1.05)",
     veil: "linear-gradient(to bottom, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.34) 45%, rgba(255, 255, 255, 0.12) 100%)",
     ink: "#1d1d1f",
@@ -100,13 +108,13 @@ export const HERO_TREATMENTS = {
     ink: "#1d1d1f",
   },
   dark: {
-    base: "40, 16, 104",
+    base: "30, 18, 59",
     filter: "saturate(0.6) brightness(0.42)",
     veil: "linear-gradient(to bottom, rgba(40, 16, 104, 0.5) 0%, rgba(40, 16, 104, 0.35) 45%, rgba(40, 16, 104, 0.55) 100%)",
     ink: "#ffffff",
   },
   shafts: {
-    base: "40, 16, 104",
+    base: "30, 18, 59",
     filter: undefined,
     veil: "transparent",
     ink: "#1d1d1f",

@@ -63,7 +63,6 @@ export type Photo = {
 };
 
 export type SiteContent = {
-  heroImage: string;
   announcements: Announcement[];
   serviceTimes: ServiceTime[];
   upcomingEvents: UpcomingEvent[];
