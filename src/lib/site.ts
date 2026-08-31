@@ -102,15 +102,16 @@ export const HERO_VIDEO = {
 };
 
 /**
- * Per-treatment surface. `filter` works the photograph itself; `veil` is the
+ * Per-treatment surface. `filter` works the footage itself; `veil` is the
  * wash laid over it; `ink` is the colour the headline and closing line take,
  * since a night sky and a dusk sky do not want the same type; `base` is the
  * colour the foot of the hero settles into on its way to the next section —
- * the logo's indigo for the colour treatments, neutral for the grayscale one.
+ * #1e123b for the colour treatments, neutral for the grayscale one. It was
+ * the logo's indigo, #281068, which read too blue against the choir.
  */
 export const HERO_TREATMENTS = {
   photo: {
-    base: "40, 16, 104",
+    base: "30, 18, 59",
     filter: "saturate(1.05)",
     veil: "linear-gradient(to bottom, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.34) 45%, rgba(255, 255, 255, 0.12) 100%)",
     ink: "#1d1d1f",
@@ -122,13 +123,13 @@ export const HERO_TREATMENTS = {
     ink: "#1d1d1f",
   },
   dark: {
-    base: "40, 16, 104",
+    base: "30, 18, 59",
     filter: "saturate(0.6) brightness(0.42)",
     veil: "linear-gradient(to bottom, rgba(40, 16, 104, 0.5) 0%, rgba(40, 16, 104, 0.35) 45%, rgba(40, 16, 104, 0.55) 100%)",
     ink: "#ffffff",
   },
   shafts: {
-    base: "40, 16, 104",
+    base: "30, 18, 59",
     filter: undefined,
     veil: "transparent",
     ink: "#1d1d1f",

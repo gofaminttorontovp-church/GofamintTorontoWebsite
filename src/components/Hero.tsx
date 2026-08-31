@@ -344,7 +344,7 @@ export default function Hero({ start = true }: { start?: boolean }) {
       <div ref={stageRef} style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         <HeroBackdrop treatment={treatment} />
 
-        {/* the choir settles into the logo's deep indigo at the base */}
+        {/* the choir settles into the deep indigo at the base */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: `linear-gradient(to bottom, rgba(${base}, 0) 0%, rgba(${base}, 0.22) 62%, rgb(${base}) 100%)`, pointerEvents: "none" }} />
 
         {/* the red line: enters above the headline and dives under it */}
