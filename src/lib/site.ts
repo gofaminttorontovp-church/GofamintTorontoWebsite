@@ -64,30 +64,15 @@ export type HeroTreatment = "shafts" | "photo" | "mono" | "dark";
 export const HERO_BACKDROP: HeroTreatment = "dark";
 
 /**
- * The skyline photograph. `flip` mirrors it horizontally — the aerial shot
- * has the CN tower on the left, and the headline wants that side clear.
- * `position` is the object-position, biased so the tower survives the crop
- * on a narrow screen.
- */
-export const HERO_PHOTO = {
-  // The file itself is editable from /admin (content/site-content.json);
-  // the flip and the crop bias stay design decisions, made here.
-  src: SITE_CONTENT.heroImage,
-  flip: false,
-  // Biased right of centre: on a narrow screen a 16:9 photo loses most of its
-  // width to the crop, and this keeps the tower inside what survives.
-  position: "62% 50%",
-};
-
-/**
- * The choir, singing — what the hero actually plays behind the welcome.
+ * The choir, singing — what the hero plays behind the welcome, and the only
+ * backdrop it has. The skyline photograph the treatments were first written
+ * against is gone, along with the editable "home page backdrop" that pointed
+ * at it: the hero stopped reading that field when this clip arrived, and a
+ * control in /admin that changes nothing is worse than no control.
  *
- * The skyline above is still what the "photo", "mono" and "dark" treatments
- * are written against, and HERO_PHOTO stays for them; this is the moving
- * version of the same slot. The clip carries no audio track — it was stripped
- * rather than muted, so there is nothing to unmute and nothing to download —
- * and it is encoded with the index at the front so it starts on the first
- * chunk instead of the last.
+ * The clip carries no audio track — it was stripped rather than muted, so
+ * there is nothing to unmute and nothing to download — and it is encoded with
+ * the index at the front so it starts on the first chunk instead of the last.
  *
  * `poster` is a still from three seconds in. It stands in before the video can
  * play, and it is the whole backdrop for a visitor who has asked for reduced

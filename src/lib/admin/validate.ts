@@ -93,7 +93,6 @@ export function validateContent(content: unknown): string | null {
   const record = content as Record<string, unknown>;
 
   const known = [
-    "heroImage",
     "announcements",
     "serviceTimes",
     "upcomingEvents",
@@ -107,9 +106,6 @@ export function validateContent(content: unknown): string | null {
   for (const key of known) {
     if (!(key in record)) return `Missing section "${key}"`;
   }
-
-  const heroError = isImageRef("Hero image")(record.heroImage);
-  if (heroError) return heroError;
 
   return (
     checkList("Announcements", record.announcements, {

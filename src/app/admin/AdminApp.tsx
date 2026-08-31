@@ -7,7 +7,6 @@ import {
   AnnouncementsEditor,
   EventsEditor,
   GroupsEditor,
-  HeroEditor,
   PhotosEditor,
   ServiceTimesEditor,
   VideosEditor,
@@ -46,7 +45,6 @@ const SECTIONS: { key: string; label: string; blurb: string }[] = [
   { key: "services", label: "Service times", blurb: "The weekly rhythm" },
   { key: "groups", label: "Groups & leaders", blurb: "Photos and words on the Groups page" },
   { key: "videos", label: "Videos", blurb: "The YouTube gallery on the Media page" },
-  { key: "hero", label: "Home page backdrop", blurb: "The photo behind the headline" },
 ];
 
 export default function AdminApp() {
@@ -240,7 +238,6 @@ export default function AdminApp() {
                       {section.key === "services" && <ServiceTimesEditor {...editorProps} />}
                       {section.key === "groups" && <GroupsEditor {...editorProps} />}
                       {section.key === "videos" && <VideosEditor {...editorProps} />}
-                      {section.key === "hero" && <HeroEditor {...editorProps} />}
                     </div>
                   )}
                 </div>

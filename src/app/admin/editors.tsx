@@ -502,32 +502,3 @@ export function VideosEditor({ content, update }: EditorProps) {
   );
 }
 
-/* ---------------------------------------------------------------
-   Home page backdrop
-   --------------------------------------------------------------- */
-
-export function HeroEditor({ content, update, stageImage, imgSrc, onError }: EditorProps) {
-  const replace = async (file: File) => {
-    try {
-      const staged = await stageImage("hero", file);
-      update((draft) => {
-        draft.heroImage = staged.url;
-      });
-    } catch (error) {
-      onError(error instanceof Error ? error.message : "That photo couldn't be read.");
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <p className="text-[14px] leading-relaxed text-neutral-500">
-        The photograph behind the big headline on the home page. It sits under a dark wash, so a
-        wide photo with a clear subject works best. Change it thoughtfully — it is the first thing
-        every visitor sees.
-      </p>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={imgSrc(content.heroImage)} alt="Home page backdrop" className="w-full rounded-2xl object-cover" />
-      <PickButton label="Replace backdrop photo" primary onFiles={(files) => replace(files[0])} />
-    </div>
-  );
-}
