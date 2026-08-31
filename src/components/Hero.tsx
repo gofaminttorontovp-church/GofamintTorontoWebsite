@@ -175,6 +175,9 @@ export default function Hero({ start = true }: { start?: boolean }) {
   const twRef = useRef<HTMLSpanElement>(null);
 
   const treatment = useHeroTreatment();
+  // True from the moment the performance starts until it settles. While it is
+  // up, the geometry underneath it is left alone — see measure().
+  const playingRef = useRef(false);
   const [s1, setS1] = useState(0); // Act 1 clock, in the old scroll units
   const [anim, setAnim] = useState(0); // Act 2 virtual clock; 0 = not started
   const [paths, setPaths] = useState<PathState>({
@@ -211,6 +214,11 @@ export default function Hero({ start = true }: { start?: boolean }) {
 
     const measure = () => {
       if (!stage || !trow) return;
+      // Not while the performance is running. Every call rebuilds the flight
+      // spline, its arc-length table and its turn windows, and swapping those
+      // mid-flight teleports the bird — which is what a phone does on its own
+      // the moment its URL bar slides away and fires a resize.
+      if (playingRef.current) return;
       const s = stage.getBoundingClientRect();
       const t = trow.getBoundingClientRect();
       const W = s.width;
@@ -332,7 +340,10 @@ export default function Hero({ start = true }: { start?: boolean }) {
   // ---- the performance: Act 1 on its own clock, Act 2 chained behind it ----
   useEffect(() => {
     const hero = heroRef.current;
-    if (!hero || !start) return;
+    // Nothing starts before the geometry exists. The line is drawn to where
+    // "Toronto" actually sits, and starting ahead of the first measure gives
+    // the performance a blank stage to open on.
+    if (!hero || !start || !paths.ready) return;
 
     const fl = { raf: 0, timer: 0, release: () => {} };
 
@@ -420,25 +431,57 @@ export default function Hero({ start = true }: { start?: boolean }) {
       fl.raf = requestAnimationFrame(step);
     };
 
-    run(
-      ACT1_MS,
-      (k) => setS1(act1Units(k * ACT1_MS)),
-      () => {
-        setS1(90);
-        run(
-          ANIM_MS,
-          (k) => setAnim(ANIM_FROM + easeClock(k) * (ANIM_TO - ANIM_FROM)),
-          advance,
-        );
-      },
-    );
+    const begin = () => {
+      playingRef.current = true;
+      run(
+        ACT1_MS,
+        (k) => setS1(act1Units(k * ACT1_MS)),
+        () => {
+          setS1(90);
+          run(
+            ANIM_MS,
+            (k) => setAnim(ANIM_FROM + easeClock(k) * (ANIM_TO - ANIM_FROM)),
+            () => {
+              // Done performing: the page may resize the hero again, and the
+              // final tableau should follow it.
+              playingRef.current = false;
+              advance();
+            },
+          );
+        },
+      );
+    };
+
+    // Play it to somebody. A reload restores the scroll position the closing
+    // glide left behind, which puts the visitor below a hero they have not
+    // watched yet — and the performance would spend itself off-screen, leaving
+    // them whatever was still running when they scrolled back up. It waits
+    // until the hero is actually in front of them, which is the one good habit
+    // the old scroll-driven version had for free.
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver === "undefined") {
+      begin();
+    } else {
+      io = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+          io?.disconnect();
+          io = null;
+          begin();
+        },
+        { threshold: 0.5 },
+      );
+      io.observe(hero);
+    }
 
     return () => {
+      io?.disconnect();
       cancelAnimationFrame(fl.raf);
       clearTimeout(fl.timer);
       fl.release();
+      playingRef.current = false;
     };
-  }, [start]);
+  }, [start, paths.ready]);
 
   // ---- derived render values (was renderVals) ----
   const { pathLine, pathSprout, pathUnwrap, lineLen, sproutLen, unwrapLen, flightPts, flightArc, turns, doveW, ready } = paths;
