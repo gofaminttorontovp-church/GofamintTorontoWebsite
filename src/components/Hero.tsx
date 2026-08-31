@@ -580,8 +580,73 @@ export default function Hero({ start = true }: { start?: boolean }) {
     turnEase = Math.sin(Math.PI * q);
   } else {
     const sec = dx >= 0 ? FRAME_R : FRAME_L;
-    const flap = Math.max(0, Math.floor((A - 222) / FLAP_STEP_VH));
-    frameIdx = sec.start + (flap % sec.count);
+    const count = sec.count;
+
+    // The wingbeat is phased to hand over cleanly at each end of the stretch
+    // it is flying, because the ninety-two frames came off one GIF in order:
+    // 0-34 flying right, 35-77 turning, 78-91 flying left. Frame 34 leads into
+    // the turn's first and 77 leads out into the left cycle's first, so those
+    // are the poses to arrive and leave on. Counting the beat from the top of
+    // the flight instead meant the bird reached each bank on whatever pose it
+    // happened to be holding and snapped into the turn — which is why the
+    // turns were the choppy part while the straight stretches were fine. The
+    // seam inside a cycle needs no such care: a flap cycle loops, so its last
+    // frame already runs into its first.
+    let segFrom = 0;
+    let segTo = 1;
+    let fromIdx = -1; // pose to leave the previous turn on, -1 if free
+    let toIdx = -1; // pose to reach the next turn on, -1 if free
+    for (const tn of turns) {
+      if (pD >= tn.u + TURN_HALF) {
+        segFrom = tn.u + TURN_HALF;
+        // A forward turn ends on 77 and hands to 78, the left cycle's first;
+        // a reversed one ends on 35 and hands back to 34, the right cycle's last.
+        fromIdx = tn.dir > 0 ? 0 : count - 1;
+      } else if (pD < tn.u - TURN_HALF) {
+        segTo = tn.u - TURN_HALF;
+        // ...and the mirror of that going in.
+        toIdx = tn.dir > 0 ? count - 1 : 0;
+        break;
+      }
+    }
+
+    const A0 = 222 + segFrom * 222;
+    const A1 = 222 + segTo * 222;
+    const nominal = Math.max(1, Math.round((A1 - A0) / FLAP_STEP_VH));
+    let step = FLAP_STEP_VH;
+    // Count forward from the pose this stretch begins on, or — when only the
+    // far end is pinned — backwards from the one it has to arrive on.
+    let forward = fromIdx >= 0;
+
+    if (fromIdx >= 0 && toIdx >= 0) {
+      if (nominal >= count) {
+        // Long enough to phase: stretch the beat by a few percent so a whole
+        // number of wingbeats fits between the two poses. Slightly fast or
+        // slow is invisible; the jump in pose it replaces was not.
+        const target = (((toIdx - fromIdx + 1) % count) + count) % count;
+        // Nearest fit either side of the nominal. Rounding only downwards put
+        // twenty-nine wingbeats where thirty-nine belonged and dragged the
+        // beat a third slower for the length of the stretch.
+        const over = (((nominal - target) % count) + count) % count;
+        let steps = over * 2 <= count ? nominal - over : nominal + (count - over);
+        while (steps < 1) steps += count;
+        step = (A1 - A0) / steps;
+      } else {
+        // Too short to hold even one cycle — the sliver between two turns that
+        // a phone's wrapped closing line can leave. There is no phasing to be
+        // done here, and forcing a whole beat into it halves the wingbeat, so
+        // the beat keeps its rate and arrives on the right pose. Whatever
+        // seam is left behind it can only be as wide as the sliver is long.
+        forward = false;
+      }
+    }
+
+    const i = forward
+      ? fromIdx + Math.floor((A - A0) / step)
+      : toIdx >= 0
+        ? toIdx - Math.floor((A1 - A) / step)
+        : Math.floor((A - A0) / step);
+    frameIdx = sec.start + (((i % count) + count) % count);
   }
   const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1)) * (1 - turnEase);
   // The bird dissolves along its final approach — ~90% gone as the unwrap
