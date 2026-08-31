@@ -55,13 +55,57 @@ const CLOSE_MS = 2200;
 const CLOSE_TYPE_FROM = 0.45;
 const CLOSE_TYPE_TO = 0.8;
 
-// The line is drawn entirely in brand red, starting part-way along the curve —
-// the stretch before that carried the old white lead-in and is never inked.
+// On the wide layout the line is drawn starting part-way along the curve — the
+// stretch before that carried the old white lead-in and is never inked. The
+// mobile line below was drawn to be inked end to end, so it skips nothing.
 const LINE_LEAD_IN = 0.25; // fraction of the curve skipped before the line starts
+
+/** Below the site's md breakpoint the hero uses the hand-drawn mobile line. */
+const MOBILE_MAX_W = 768;
+
+/**
+ * The mobile line, drawn by hand on a phone and kept as fractions of the hero
+ * so it holds its shape at any size.
+ *
+ * The wide-screen line curves down and then hooks back up into "Toronto",
+ * which reads as tucking under the word on a laptop and as a wobble on a
+ * phone. This one sweeps out to the left edge instead and comes back in level
+ * with the word. There is no eighth point: the line has to finish where
+ * "Toronto" actually sits, and that is measured at runtime.
+ */
+const LINE_MOBILE_NORM: [number, number][] = [
+  [0.621, 0.298],
+  [0.533, 0.347],
+  [0.429, 0.391],
+  [0.325, 0.433],
+  [0.209, 0.471],
+  [0.11, 0.515],
+  [0.164, 0.565],
+];
+
+/** Catmull-Rom through the points, emitted as cubics. */
+const splinePath = (pts: [number, number][]) => {
+  const n = (v: number) => v.toFixed(1);
+  if (pts.length < 2) return "M 0 0";
+  let d = "M " + n(pts[0][0]) + " " + n(pts[0][1]);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    d +=
+      " C " + n(p1[0] + (p2[0] - p0[0]) / 6) + " " + n(p1[1] + (p2[1] - p0[1]) / 6) +
+      " " + n(p2[0] - (p3[0] - p1[0]) / 6) + " " + n(p2[1] - (p3[1] - p1[1]) / 6) +
+      " " + n(p2[0]) + " " + n(p2[1]);
+  }
+  return d;
+};
 
 type PathState = {
   pathLine: string;
   lineLen: number;
+  /** Fraction of the curve left blank before the ink starts. */
+  lead: number;
   ready: boolean;
 };
 
@@ -87,6 +131,7 @@ export default function Hero({ start = true }: { start?: boolean }) {
   const [paths, setPaths] = useState<PathState>({
     pathLine: "M 0 0",
     lineLen: 1,
+    lead: LINE_LEAD_IN,
     ready: false,
   });
 
@@ -113,14 +158,18 @@ export default function Hero({ start = true }: { start?: boolean }) {
       const ey = t.top - s.top + t.height * 0.58;
       const n = (v: number) => v.toFixed(1);
 
-      // The line enters from the upper right and curves down and left into
-      // "Toronto".
+      // Two lines, because one shape cannot serve both. On the wide layout it
+      // enters from the upper right and curves down and left into "Toronto";
+      // on a phone it takes the drawn route out to the left and back in.
+      const mobile = W < MOBILE_MAX_W;
       const startX = 0.67 * W + 0.007 * Math.min(W, H);
       const startY = 0.13 * H + 0.147 * Math.min(W, H);
-      const pathLine =
-        "M " + n(startX) + " " + n(startY) +
-        " C " + n(startX - 0.02 * W) + " " + n(startY + 0.1 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
-        " C " + n(0.3 * W) + " " + n(0.58 * H) + " " + n(ex - 0.08 * W) + " " + n(ey + 0.04 * H) + " " + n(ex) + " " + n(ey);
+      const pathLine = mobile
+        ? splinePath([...LINE_MOBILE_NORM.map(([mx, my]) => [mx * W, my * H] as [number, number]), [ex, ey]])
+        : "M " + n(startX) + " " + n(startY) +
+          " C " + n(startX - 0.02 * W) + " " + n(startY + 0.1 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
+          " C " + n(0.3 * W) + " " + n(0.58 * H) + " " + n(ex - 0.08 * W) + " " + n(ey + 0.04 * H) + " " + n(ex) + " " + n(ey);
+      const lead = mobile ? 0 : LINE_LEAD_IN;
 
       if (pathLine === cur) return;
       cur = pathLine;
@@ -133,7 +182,7 @@ export default function Hero({ start = true }: { start?: boolean }) {
       } catch {
         lineLen = 0;
       }
-      setPaths((prev) => ({ ...prev, pathLine, lineLen: lineLen || 1 }));
+      setPaths((prev) => ({ ...prev, pathLine, lineLen: lineLen || 1, lead }));
     };
 
     const onResize = () => measure();
@@ -238,7 +287,7 @@ export default function Hero({ start = true }: { start?: boolean }) {
   }, [start, paths.ready]);
 
   // ---- derived render values ----
-  const { pathLine, lineLen, ready } = paths;
+  const { pathLine, lineLen, lead: leadFrac, ready } = paths;
 
   // Two clocks, one story: Act 1's runs first, the close picks up behind it.
   const S = s1;
@@ -252,7 +301,7 @@ export default function Hero({ start = true }: { start?: boolean }) {
   // The head lays ink down through phase A, then the tail is consumed into
   // the word through phase B — both measured from the line's own start, so
   // the skipped lead-in stays blank throughout.
-  const lead = LINE_LEAD_IN * lineLen;
+  const lead = leadFrac * lineLen;
   const headL = pA * (lineLen - lead);
   const tailL = pB * headL;
   const bigL = (lineLen * 2 + 10).toFixed(1);
