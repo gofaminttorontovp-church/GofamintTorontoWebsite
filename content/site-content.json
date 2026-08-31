@@ -86,6 +86,15 @@
       "description": "Pastor Samuel Adusi leads Gofamint Toronto and preaches on Sunday mornings. If you are visiting for the first time, or you would like someone to pray with you, ask for him."
     },
     {
+      "id": "assistant-pastor",
+      "group": "Pastor",
+      "name": "Pastor Jeff Ogboe",
+      "role": "Assistant Pastor",
+      "image": "/groups/pastor-jeff-ogboe.jpg",
+      "alt": "Pastor Jeff Ogboe in a grey suit and a striped tie",
+      "description": "Pastor Jeffery Ogboe is the assistant pastor at Gofamint Toronto, serving alongside Pastor Sam in the teaching and the care of the church. If you would like someone to pray with you, he is as good a person to ask."
+    },
+    {
       "id": "choir",
       "group": "Choir",
       "image": "/groups/choir.jpg",
