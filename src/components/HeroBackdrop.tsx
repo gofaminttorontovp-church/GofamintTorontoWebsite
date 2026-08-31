@@ -31,6 +31,10 @@ export default function HeroBackdrop({ treatment }: { treatment: HeroTreatment }
         fill
         priority
         sizes="100vw"
+        // The loading screen holds its count until this photograph has landed,
+        // and finds it by this attribute — next/image rewrites the src through
+        // the optimizer, so there is no URL to preload from the outside.
+        data-hero-photo=""
         style={{
           objectFit: "cover",
           objectPosition: HERO_PHOTO.position,

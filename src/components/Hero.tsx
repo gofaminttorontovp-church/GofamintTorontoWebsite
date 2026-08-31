@@ -6,24 +6,45 @@ import { HERO_TREATMENTS } from "@/lib/site";
 import { useHeroTreatment } from "@/lib/use-hero-treatment";
 
 /**
- * Scroll-driven hero, ported from the Gofamint Toronto design.
+ * The hero, ported from the Gofamint Toronto design and now self-playing.
  *
  * Act 1 — a brand-red line sweeps in above the headline, curves down beneath
  * it, then retracts into the word "Toronto", written letter-by-letter in red
  * under the static "Welcome to Gofamint" headline.
  *
- * Act 2 — once "Toronto" is written, a slow, self-playing performance takes
- * over: the typing caret sprouts back into a white line, which is consumed
- * into a white flying dove (frame-by-frame line art in /public/dove-flight).
- * The dove glides the hand-drawn spline, unwraps into a white line, and
- * types out "The Word" at the end of the closing sentence — then the page
- * gently carries the visitor on to the next section.
+ * Act 2 — once "Toronto" is written, the typing caret sprouts back into a
+ * white line, which is consumed into a white flying dove (frame-by-frame line
+ * art in /public/dove-flight). The dove glides the hand-drawn spline, unwraps
+ * into a white line, and types out "The Word" at the end of the closing
+ * sentence — then the page gently carries the visitor on to the next section.
+ *
+ * Both acts run on a clock now. Act 1 used to be scrubbed by the scrollbar,
+ * which meant the hero had to be 240vh of pinned emptiness and the visitor
+ * had to scroll to be told the story. It plays on its own, the hero is one
+ * screen tall, and the page scrolls normally from the first flick — a visitor
+ * who wants the service times is never held back by the dove. The clock
+ * starts when `start` turns true, which the loading screen decides.
  */
 
-const SCROLL_LENGTH_VH = 240;
-// Total scrollable distance (hero height minus the pinned viewport), in vh.
-// Act 1's phase boundaries are expressed in these units.
-const SCROLL_VH = SCROLL_LENGTH_VH - 100;
+// Act 1's phase boundaries are still expressed in the old scroll units, and
+// `act1Units` below maps elapsed milliseconds onto them — so the phase maths
+// further down reads exactly as it did when a scrollbar supplied the number.
+const ACT1_DRAW_MS = 1600; // the line sweeps in and dives    (units  0 → 45)
+const ACT1_GAP_MS = 200; //  a beat before the word           (units 45 → 50)
+const ACT1_TYPE_MS = 1350; // "Toronto" is written            (units 50 → 90)
+const ACT1_MS = ACT1_DRAW_MS + ACT1_GAP_MS + ACT1_TYPE_MS;
+
+/** Elapsed milliseconds of Act 1 → the scroll unit the phase maths wants. */
+const act1Units = (ms: number) => {
+  if (ms < ACT1_DRAW_MS) {
+    // eased out, so the line arrives at the word rather than stopping at it
+    const k = ms / ACT1_DRAW_MS;
+    return 45 * (1 - (1 - k) * (1 - k));
+  }
+  if (ms < ACT1_DRAW_MS + ACT1_GAP_MS) return 45 + 5 * ((ms - ACT1_DRAW_MS) / ACT1_GAP_MS);
+  // the typing runs linear — letters should land at an even pace
+  return 50 + 40 * Math.min(1, (ms - ACT1_DRAW_MS - ACT1_GAP_MS) / ACT1_TYPE_MS);
+};
 
 // Act 2 plays on its own clock once "Toronto" is written. Its virtual
 // timeline keeps the old scroll units (205 → 520) so the phase maths below
@@ -39,7 +60,6 @@ const SCROLL_VH = SCROLL_LENGTH_VH - 100;
 const ANIM_FROM = 205;
 const ANIM_TO = 505;
 const ANIM_MS = 11500;
-const TRIGGER_S = 90; // cue the performance the moment "Toronto" is written
 const RAMP = 0.12; // eased fraction of the clock at each end
 
 // The line is drawn entirely in brand red, starting part-way along the curve —
@@ -142,14 +162,14 @@ const arcParam = (lut: number[], f: number): number => {
   return (lo - 1 + frac) / (lut.length - 1);
 };
 
-export default function Hero() {
+export default function Hero({ start = true }: { start?: boolean }) {
   const heroRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const trowRef = useRef<HTMLDivElement>(null);
   const twRef = useRef<HTMLSpanElement>(null);
 
   const treatment = useHeroTreatment();
-  const [p, setP] = useState(0);
+  const [s1, setS1] = useState(0); // Act 1 clock, in the old scroll units
   const [anim, setAnim] = useState(0); // Act 2 virtual clock; 0 = not started
   const [paths, setPaths] = useState<PathState>({
     pathLine: "M 0 0",
@@ -177,15 +197,15 @@ export default function Hero() {
 
   useEffect(() => {
     const hero = heroRef.current;
-    const sticky = stickyRef.current;
+    const stage = stageRef.current;
     const trow = trowRef.current;
     if (!hero) return;
 
     let cur = { line: "", sprout: "", unwrap: "" };
 
     const measure = () => {
-      if (!sticky || !trow) return;
-      const s = sticky.getBoundingClientRect();
+      if (!stage || !trow) return;
+      const s = stage.getBoundingClientRect();
       const t = trow.getBoundingClientRect();
       const W = s.width;
       const H = s.height;
@@ -282,11 +302,36 @@ export default function Hero() {
       setPaths((prev) => ({ ...prev, pathLine, pathSprout, pathUnwrap, lineLen, sproutLen, unwrapLen, flightPts, flightArc, turns, doveW }));
     };
 
-    // ---- Act 2 flight: a one-shot, time-driven performance cued by scroll ----
-    const fl = { raf: 0, timer: 0, playing: false, done: false, advanced: false };
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
 
-    // Trapezoidal clock: gentle ramps at both ends, constant through the
-    // middle so the glide and wing-beat stay even.
+    // Two passes, because the line is drawn to where "Toronto" actually sits:
+    // once the layout has settled, and again once the display font has swapped
+    // in and the word has taken its real width.
+    const t = setTimeout(() => {
+      measure();
+      setPaths((prev) => ({ ...prev, ready: true }));
+    }, 60);
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure);
+    }
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(t);
+    };
+  }, []);
+
+  // ---- the performance: Act 1 on its own clock, Act 2 chained behind it ----
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || !start) return;
+
+    const fl = { raf: 0, timer: 0 };
+
+    // Act 2's trapezoidal clock: gentle ramps at both ends, constant through
+    // the middle so the glide and wing-beat stay even.
     const easeClock = (k: number) => {
       const v = 1 / (1 - RAMP);
       if (k < RAMP) return (v * k * k) / (2 * RAMP);
@@ -294,102 +339,69 @@ export default function Hero() {
       return v * (k - RAMP / 2);
     };
 
-    const finishFlight = (advance: boolean) => {
-      fl.playing = false;
-      fl.done = true;
-      if (!advance || fl.advanced) return;
-      fl.advanced = true;
-      // let "The Word" land for a beat, then glide on to the next section
+    // The one nudge the hero gives: a beat after "The Word" lands, the page
+    // glides on to what is under it. Only if the visitor has stayed at the
+    // top — the moment they scroll for themselves they are driving, and a
+    // page that jumps under a reader is the scroll lock in another coat.
+    const advance = () => {
       fl.timer = window.setTimeout(() => {
+        if (window.scrollY > 40) return;
         const r = hero.getBoundingClientRect();
-        if (r.bottom > window.innerHeight + 10) {
+        if (r.bottom > 10) {
           window.scrollTo({ top: window.scrollY + r.bottom, behavior: "smooth" });
         }
       }, 800);
     };
 
-    const stopFlight = () => {
-      cancelAnimationFrame(fl.raf);
-      fl.playing = false;
-      fl.done = false;
-      setAnim(0);
-    };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Straight to the final tableau — the whole story, none of the movement,
+      // and no page that travels on its own either.
+      setS1(90);
+      setAnim(ANIM_TO);
+      return;
+    }
 
-    const startFlight = () => {
-      if (fl.playing || fl.done) return;
-      fl.playing = true;
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        // skip straight to the final tableau; no auto-scroll either
-        setAnim(ANIM_TO);
-        finishFlight(false);
-        return;
-      }
-      // Accumulate clamped deltas rather than measuring from an absolute
-      // start, so a hidden tab pauses the performance instead of skipping it.
+    // Both acts accumulate clamped deltas rather than measuring against an
+    // absolute start, so a hidden tab pauses the performance instead of
+    // skipping through it.
+    const run = (durationMs: number, onTick: (k: number) => void, onEnd: () => void) => {
       let elapsed = 0;
       let last = 0;
       const step = (now: number) => {
         if (last) elapsed += Math.min(now - last, 100);
         last = now;
-        const k = Math.min(1, elapsed / ANIM_MS);
-        setAnim(ANIM_FROM + easeClock(k) * (ANIM_TO - ANIM_FROM));
+        const k = Math.min(1, elapsed / durationMs);
+        onTick(k);
         if (k < 1) fl.raf = requestAnimationFrame(step);
-        else finishFlight(true);
+        else onEnd();
       };
       fl.raf = requestAnimationFrame(step);
     };
 
-    const update = () => {
-      const r = hero.getBoundingClientRect();
-      const total = hero.offsetHeight - window.innerHeight;
-      const next = Math.max(0, Math.min(1, total > 0 ? -r.top / total : 1));
-      setP((prev) => (Math.abs(next - prev) > 0.0004 || (next !== prev && (next === 0 || next === 1)) ? next : prev));
-      const sNow = next * SCROLL_VH;
-      if (sNow >= TRIGGER_S) {
-        startFlight();
-      } else if (fl.playing && sNow < 70) {
-        stopFlight(); // scrolled well away mid-performance — abort and re-arm
-      } else if (fl.done && sNow < 20) {
-        fl.done = false; // back near the top: reset so the story can replay
-        setAnim(0);
-      }
-    };
-
-    const onScroll = () => update();
-    const onResize = () => {
-      measure();
-      update();
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-
-    const t = setTimeout(() => {
-      measure();
-      update();
-      setPaths((prev) => ({ ...prev, ready: true }));
-    }, 60);
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => {
-        measure();
-        update();
-      });
-    }
+    run(
+      ACT1_MS,
+      (k) => setS1(act1Units(k * ACT1_MS)),
+      () => {
+        setS1(90);
+        run(
+          ANIM_MS,
+          (k) => setAnim(ANIM_FROM + easeClock(k) * (ANIM_TO - ANIM_FROM)),
+          advance,
+        );
+      },
+    );
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      clearTimeout(t);
       cancelAnimationFrame(fl.raf);
       clearTimeout(fl.timer);
     };
-  }, []);
+  }, [start]);
 
   // ---- derived render values (was renderVals) ----
   const { pathLine, pathSprout, pathUnwrap, lineLen, sproutLen, unwrapLen, flightPts, flightArc, turns, doveW, ready } = paths;
 
-  // Scroll drives Act 1; the self-playing flight clock drives Act 2.
-  const S = p * SCROLL_VH;
+  // Two clocks, one story: Act 1's runs first, Act 2's picks up behind it.
+  const S = s1;
   const A = anim;
 
   // Act 1 — phase A (0 → 45): line draws in, then dives under the headline.
@@ -424,7 +436,11 @@ export default function Hero() {
 
   const clip = "inset(0 " + ((1 - pB) * 100).toFixed(2) + "% 0 0)";
   const caretLeft = (pB * 100).toFixed(2) + "%";
-  const hintOpacity = clamp01(1 - S / 8);
+  // The hint is an invitation now, not an instruction: the story plays whether
+  // or not the visitor scrolls, so it fades in behind the opening line, stays
+  // while there is page underneath still unseen, and steps aside as the dove
+  // comes in to land and the page moves on by itself.
+  const hintOpacity = fade(S, 6, 30) * (1 - fade(A, 400, 460));
 
   // Sprout line: the head advances out of the caret, then the tail is
   // consumed into the head — the line "becomes" the dove.
@@ -490,8 +506,8 @@ export default function Hero() {
   if (A > 468) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((A - 499) / 6);
 
   return (
-    <div ref={heroRef} id="top" style={{ height: `${SCROLL_LENGTH_VH}vh`, position: "relative", background: "#7EC8EF" }}>
-      <div ref={stickyRef} style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
+    <div ref={heroRef} id="top" style={{ height: "100vh", position: "relative", background: "#7EC8EF" }}>
+      <div ref={stageRef} style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         <HeroBackdrop treatment={treatment} />
 
         {/* the sky settles into the logo's deep indigo at the base */}
