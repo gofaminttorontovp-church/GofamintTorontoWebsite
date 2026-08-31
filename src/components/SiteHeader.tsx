@@ -9,8 +9,14 @@ import { useScrollProgress } from "@/components/ui/use-scroll-progress";
 import { cn } from "@/lib/utils";
 import { HEADER_CTAS, HEADER_LINKS } from "@/lib/site";
 
-/** How far the page travels while the top bar draws in to its pill, in px. */
-const SHRINK_DISTANCE = 140;
+/**
+ * How far the page travels while the top bar draws in to its pill, in px.
+ *
+ * Every property that separates the full-width bar from the floating pill is
+ * interpolated across this distance, so it sets the rate of the whole move:
+ * doubling it halves how quickly the header shrinks.
+ */
+const SHRINK_DISTANCE = 280;
 
 /**
  * The site header, shared by every page including the home hero.
