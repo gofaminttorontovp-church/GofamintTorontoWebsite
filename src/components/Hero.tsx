@@ -13,8 +13,8 @@ import { useHeroTreatment } from "@/lib/use-hero-treatment";
  * under the static "Welcome to Gofamint" headline.
  *
  * The close — the sentence underneath fades up and "The Word" types itself out
- * in white at the end of it, and the page carries the visitor on to the next
- * section.
+ * in white at the end of it. The page then stays where it is; moving it is the
+ * visitor's to do.
  *
  * There was a dove here. Ninety-two frames of line art flew a hand-drawn
  * spline for eleven and a half seconds, banking through the turns, and it is
@@ -54,12 +54,6 @@ const act1Units = (ms: number) => {
 const CLOSE_MS = 2200;
 const CLOSE_TYPE_FROM = 0.45;
 const CLOSE_TYPE_TO = 0.8;
-
-// The end. "The Word" is left standing for SETTLE_MS before the page moves at
-// all, and the move itself takes SCROLL_MS — slower than a thumb-flick on
-// purpose, so the hero hands the visitor on rather than shoving them.
-const SETTLE_MS = 400;
-const SCROLL_MS = 1900;
 
 // The line is drawn entirely in brand red, starting part-way along the curve —
 // the stretch before that carried the old white lead-in and is never inked.
@@ -171,59 +165,10 @@ export default function Hero({ start = true }: { start?: boolean }) {
     // the performance a blank stage to open on.
     if (!hero || !start || !paths.ready) return;
 
-    const fl = { raf: 0, timer: 0, release: () => {} };
-
-    // The one nudge the hero gives: a beat after "The Word" lands, the page
-    // drifts on to what is under it. Only if the visitor has stayed at the
-    // top — the moment they scroll for themselves they are driving, and a
-    // page that jumps under a reader is a scroll lock in another coat.
-    //
-    // The travel is drawn by hand rather than handed to `behavior: "smooth"`,
-    // whose easing covers a whole viewport in a few hundred milliseconds and
-    // arrives as a swipe. This is the same smoothstep the rest of the hero
-    // fades on, so it leaves from nothing and settles into nothing.
-    const advance = () => {
-      fl.timer = window.setTimeout(() => {
-        if (window.scrollY > 40) return;
-        const from = window.scrollY;
-        const distance = hero.getBoundingClientRect().bottom;
-        if (distance <= 10) return;
-
-        // Whatever else happens, the visitor can take the page back. A hand on
-        // the wheel, a finger, an arrow key or a scrollbar drag all stop the
-        // drift where it stands — the last only shows up as the page landing
-        // somewhere we did not put it, hence both checks.
-        let taken = false;
-        let placed = from;
-        const yield_ = () => {
-          taken = true;
-        };
-        const INPUTS = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
-        for (const ev of INPUTS) window.addEventListener(ev, yield_, { passive: true });
-        const release = () => {
-          for (const ev of INPUTS) window.removeEventListener(ev, yield_);
-        };
-        fl.release = release;
-
-        let elapsed = 0;
-        let last = 0;
-        const glide = (now: number) => {
-          if (taken || Math.abs(window.scrollY - placed) > 4) return release();
-          if (last) elapsed += Math.min(now - last, 100);
-          last = now;
-          const k = Math.min(1, elapsed / SCROLL_MS);
-          placed = Math.round(from + fade(k, 0, 1) * distance);
-          window.scrollTo(0, placed);
-          if (k < 1) fl.raf = requestAnimationFrame(glide);
-          else release();
-        };
-        fl.raf = requestAnimationFrame(glide);
-      }, SETTLE_MS);
-    };
+    const fl = { raf: 0 };
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // Straight to the final tableau — the whole story, none of the movement,
-      // and no page that travels on its own either.
+      // Straight to the final tableau — the whole story, none of the movement.
       setS1(90);
       setClose(1);
       return;
@@ -255,9 +200,9 @@ export default function Hero({ start = true }: { start?: boolean }) {
           setS1(90);
           run(CLOSE_MS, setClose, () => {
             // Done performing: the page may resize the hero again, and the
-            // final tableau should follow it.
+            // final tableau should follow it. The page itself stays where it
+            // is — the visitor moves it.
             playingRef.current = false;
-            advance();
           });
         },
       );
@@ -288,8 +233,6 @@ export default function Hero({ start = true }: { start?: boolean }) {
     return () => {
       io?.disconnect();
       cancelAnimationFrame(fl.raf);
-      clearTimeout(fl.timer);
-      fl.release();
       playingRef.current = false;
     };
   }, [start, paths.ready]);
@@ -322,10 +265,11 @@ export default function Hero({ start = true }: { start?: boolean }) {
   const clip = "inset(0 " + ((1 - pB) * 100).toFixed(2) + "% 0 0)";
   const caretLeft = (pB * 100).toFixed(2) + "%";
 
-  // The hint is an invitation, not an instruction: the story plays whether or
-  // not the visitor scrolls, so it fades in behind the opening line and steps
-  // aside as the close lands and the page moves on by itself.
-  const hintOpacity = fade(S, 6, 30) * (1 - fade(C, 0.72, 1));
+  // The hint fades in behind the opening line and then stays. It used to step
+  // aside as the close landed, because the page was about to carry the visitor
+  // down by itself; nothing does that now, so it is the only thing telling
+  // them there is more underneath.
+  const hintOpacity = fade(S, 6, 30);
 
   // The closing sentence rises into place, then "The Word" types out at the
   // end of it in white.
