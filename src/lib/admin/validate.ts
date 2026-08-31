@@ -88,6 +88,31 @@ function checkList(
 }
 
 /** Returns an error message, or null if the content is safe to commit. */
+/**
+ * Sections the site used to have and no longer reads.
+ *
+ * They are tolerated rather than rejected, because the code and the content
+ * are versioned apart: the editor always loads the content fresh from the
+ * default branch, whatever branch this deployment was built from. So the
+ * moment a field is dropped from the code, every editor meets a file that
+ * still has it — and did, with "heroImage", which returned "Unexpected
+ * section" and left nobody able to open the tool at all until the content
+ * caught up. Anything genuinely unknown is still refused; these are only the
+ * ones we know we removed.
+ *
+ * `stripRetired` takes them back out on the way to the editor, so the next
+ * save writes a file without them and the entry here can eventually go.
+ */
+export const RETIRED_SECTIONS = ["heroImage"] as const;
+
+/** The content without any section the site has stopped reading. */
+export function stripRetired<T>(content: T): T {
+  if (typeof content !== "object" || content === null || Array.isArray(content)) return content;
+  const copy = { ...(content as Record<string, unknown>) };
+  for (const key of RETIRED_SECTIONS) delete copy[key];
+  return copy as T;
+}
+
 export function validateContent(content: unknown): string | null {
   if (typeof content !== "object" || content === null) return "Content is not an object";
   const record = content as Record<string, unknown>;
@@ -101,7 +126,8 @@ export function validateContent(content: unknown): string | null {
     "photos",
   ];
   for (const key of Object.keys(record)) {
-    if (!known.includes(key)) return `Unexpected section "${key}"`;
+    if (known.includes(key) || (RETIRED_SECTIONS as readonly string[]).includes(key)) continue;
+    return `Unexpected section "${key}"`;
   }
   for (const key of known) {
     if (!(key in record)) return `Missing section "${key}"`;
