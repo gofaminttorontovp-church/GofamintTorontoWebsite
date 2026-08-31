@@ -62,6 +62,12 @@ const ANIM_TO = 505;
 const ANIM_MS = 11500;
 const RAMP = 0.12; // eased fraction of the clock at each end
 
+// The close. "The Word" is left standing for SETTLE_MS before the page moves
+// at all, and the move itself takes SCROLL_MS — slower than a thumb-flick on
+// purpose, so the hero hands the visitor on rather than shoving them.
+const SETTLE_MS = 1600;
+const SCROLL_MS = 1900;
+
 // The line is drawn entirely in brand red, starting part-way along the curve —
 // the stretch before that carried the old white lead-in and is never inked.
 const LINE_LEAD_IN = 0.25; // fraction of the curve skipped before the line starts
@@ -328,7 +334,7 @@ export default function Hero({ start = true }: { start?: boolean }) {
     const hero = heroRef.current;
     if (!hero || !start) return;
 
-    const fl = { raf: 0, timer: 0 };
+    const fl = { raf: 0, timer: 0, release: () => {} };
 
     // Act 2's trapezoidal clock: gentle ramps at both ends, constant through
     // the middle so the glide and wing-beat stay even.
@@ -339,18 +345,54 @@ export default function Hero({ start = true }: { start?: boolean }) {
       return v * (k - RAMP / 2);
     };
 
-    // The one nudge the hero gives: a beat after "The Word" lands, the page
-    // glides on to what is under it. Only if the visitor has stayed at the
-    // top — the moment they scroll for themselves they are driving, and a
+    // The one nudge the hero gives: a long beat after "The Word" lands, the
+    // page drifts on to what is under it. Only if the visitor has stayed at
+    // the top — the moment they scroll for themselves they are driving, and a
     // page that jumps under a reader is the scroll lock in another coat.
+    //
+    // The travel is drawn by hand rather than handed to `behavior: "smooth"`.
+    // The native easing covers a whole viewport in a few hundred milliseconds,
+    // which arrives as a swipe — the one movement this hero should not make
+    // straight after asking to be watched for fifteen seconds. This is the
+    // same smoothstep the rest of the performance fades on, over SCROLL_MS,
+    // so it leaves from nothing and settles into nothing.
     const advance = () => {
       fl.timer = window.setTimeout(() => {
         if (window.scrollY > 40) return;
-        const r = hero.getBoundingClientRect();
-        if (r.bottom > 10) {
-          window.scrollTo({ top: window.scrollY + r.bottom, behavior: "smooth" });
-        }
-      }, 800);
+        const from = window.scrollY;
+        const distance = hero.getBoundingClientRect().bottom;
+        if (distance <= 10) return;
+
+        // Whatever else happens, the visitor can take the page back. A hand on
+        // the wheel, a finger, an arrow key or a scrollbar drag all stop the
+        // drift where it stands — the last two only show up as the page
+        // landing somewhere we did not put it, hence both checks.
+        let taken = false;
+        let placed = from;
+        const yield_ = () => {
+          taken = true;
+        };
+        const INPUTS = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+        for (const ev of INPUTS) window.addEventListener(ev, yield_, { passive: true });
+        const release = () => {
+          for (const ev of INPUTS) window.removeEventListener(ev, yield_);
+        };
+        fl.release = release;
+
+        let elapsed = 0;
+        let last = 0;
+        const glide = (now: number) => {
+          if (taken || Math.abs(window.scrollY - placed) > 4) return release();
+          if (last) elapsed += Math.min(now - last, 100);
+          last = now;
+          const k = Math.min(1, elapsed / SCROLL_MS);
+          placed = Math.round(from + fade(k, 0, 1) * distance);
+          window.scrollTo(0, placed);
+          if (k < 1) fl.raf = requestAnimationFrame(glide);
+          else release();
+        };
+        fl.raf = requestAnimationFrame(glide);
+      }, SETTLE_MS);
     };
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -394,6 +436,7 @@ export default function Hero({ start = true }: { start?: boolean }) {
     return () => {
       cancelAnimationFrame(fl.raf);
       clearTimeout(fl.timer);
+      fl.release();
     };
   }, [start]);
 
