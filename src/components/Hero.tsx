@@ -65,7 +65,7 @@ const RAMP = 0.12; // eased fraction of the clock at each end
 // The close. "The Word" is left standing for SETTLE_MS before the page moves
 // at all, and the move itself takes SCROLL_MS — slower than a thumb-flick on
 // purpose, so the hero hands the visitor on rather than shoving them.
-const SETTLE_MS = 800;
+const SETTLE_MS = 400;
 const SCROLL_MS = 1900;
 
 // The line is drawn entirely in brand red, starting part-way along the curve —
@@ -83,10 +83,6 @@ const FRAME_L = { start: 78, count: 14 }; // dove_079..092 — fly left
 const FLIGHT_FRAME_COUNT = 92;
 const FLAP_STEP_VH = 1.9; // virtual-clock distance per wing-beat frame (~16 fps)
 const TURN_HALF = 0.1; // half-width of a turn window, as a fraction of flight distance
-// How far across the frame the bird must actually reverse for a change of
-// horizontal direction to count as a turn, as a fraction of viewport width.
-// Below this the spline is wobbling, not the bird banking.
-const MIN_TURN_SPAN = 0.08;
 const flightSrc = (i: number) => `/dove-flight/dove_${String(i + 1).padStart(3, "0")}.png`;
 
 // Flight waypoints between the runtime-anchored start (where the dove
@@ -260,11 +256,12 @@ export default function Hero({ start = true }: { start?: boolean }) {
       ];
       // Sample the spline once for two things: a cumulative arc-length table
       // (so the flight runs at constant on-screen speed) and the spots where
-      // the horizontal direction flips (dir +1 = right→left). Positions are
-      // stored as distance fractions to match the constant-speed playhead.
+      // the horizontal direction flips — each becomes a window where the
+      // turn frames play (dir +1 = right→left). Turn positions are stored as
+      // distance fractions to match the constant-speed playhead.
       const ARC_N = 240;
       const flightArc: number[] = [0];
-      const flips: { u: number; dir: number; x: number }[] = [];
+      const turns: { u: number; dir: number }[] = [];
       let prevPt = splineAt(flightPts, 0);
       let prevDx = 0;
       for (let i = 1; i <= ARC_N; i++) {
@@ -273,36 +270,14 @@ export default function Hero({ start = true }: { start?: boolean }) {
         const d = pt[0] - prevPt[0];
         if (Math.abs(d) >= 0.0004 * W) {
           if (prevDx !== 0 && Math.sign(d) !== Math.sign(prevDx)) {
-            flips.push({ u: (flightArc[i - 1] + flightArc[i]) / 2, dir: prevDx > 0 ? 1 : -1, x: pt[0] });
+            turns.push({ u: (flightArc[i - 1] + flightArc[i]) / 2, dir: prevDx > 0 ? 1 : -1 });
           }
           prevDx = d;
         }
         prevPt = pt;
       }
       const flightLen = flightArc[ARC_N] || 1;
-      for (const f of flips) f.u /= flightLen;
-
-      // Not every flip is a turn, and treating them as if they were is what
-      // broke the flight on a phone. Down there the closing line wraps, which
-      // bends the tail of the spline into a third flip at 0.92 — and the bird
-      // spent the last fifth of its flight banking through a turn that had no
-      // room left to finish instead of beating its wings.
-      //
-      // So a turn has to earn the frames twice over. It needs somewhere to
-      // happen: a window reaches TURN_HALF either side, and one hanging off
-      // the end of the flight can never play through, so what sits there is
-      // the path settling. And it has to be a real reversal, crossing
-      // MIN_TURN_SPAN of the frame before and after — the extremes it sits
-      // between are the flips on each side, or the ends of the flight.
-      const extremes = [flightPts[0][0], ...flips.map((f) => f.x), flightPts[flightPts.length - 1][0]];
-      const turns = flips
-        .filter((f, i) => {
-          if (f.u < TURN_HALF || f.u > 1 - TURN_HALF) return false;
-          const before = Math.abs(f.x - extremes[i]);
-          const after = Math.abs(extremes[i + 2] - f.x);
-          return Math.min(before, after) >= MIN_TURN_SPAN * W;
-        })
-        .map(({ u, dir }) => ({ u, dir }));
+      for (const tn of turns) tn.u /= flightLen;
       // Unwrap line: the white thread the dove spools out, hooking into the
       // left edge of "The Word" where the typing caret picks it up.
       const unwrapCmds =
@@ -544,28 +519,8 @@ export default function Hero({ start = true }: { start?: boolean }) {
     frameIdx = FRAME_T.start + Math.min(FRAME_T.count - 1, Math.floor(qq * FRAME_T.count));
     turnEase = Math.sin(Math.PI * q);
   } else {
-    // Which way the bird faces is decided by the turns it has banked through,
-    // never by the tangent under it. Reading it off the tangent meant a spline
-    // that wandered a few pixels the other way mirror-flipped the bird
-    // mid-glide, which is the same wobble the filter above stops short of
-    // calling a turn — the two have to agree or the bird flips without banking.
-    // With no turns at all the whole flight is one way; take it from where the
-    // path ends up rather than the tangent, which is the last route by which a
-    // wobble could still flip the bird.
-    const net = hasFlight ? flightPts[flightPts.length - 1][0] - flightPts[0][0] : 0;
-    let facing = turns.length ? (turns[0].dir > 0 ? 1 : -1) : net >= 0 ? 1 : -1;
-    // ...and the cycle is counted from where this straight stretch began, not
-    // from the top of the flight, so the wings leave a bank on the frame that
-    // follows it in the original GIF (77 → 78) rather than wherever a running
-    // counter had got to.
-    let segStart = 0;
-    for (const tn of turns) {
-      if (pD < tn.u) break;
-      facing = tn.dir > 0 ? -1 : 1;
-      segStart = Math.max(segStart, tn.u + TURN_HALF);
-    }
-    const sec = facing > 0 ? FRAME_R : FRAME_L;
-    const flap = Math.max(0, Math.floor((A - 222 - segStart * 222) / FLAP_STEP_VH));
+    const sec = dx >= 0 ? FRAME_R : FRAME_L;
+    const flap = Math.max(0, Math.floor((A - 222) / FLAP_STEP_VH));
     frameIdx = sec.start + (flap % sec.count);
   }
   const doveRot = Math.max(-16, Math.min(16, ((Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI) * 0.45)) * (1 - fade(pD, 0.88, 1)) * (1 - turnEase);
