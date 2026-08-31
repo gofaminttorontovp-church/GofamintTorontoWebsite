@@ -80,6 +80,28 @@ export const HERO_PHOTO = {
 };
 
 /**
+ * The choir, singing — what the hero actually plays behind the welcome.
+ *
+ * The skyline above is still what the "photo", "mono" and "dark" treatments
+ * are written against, and HERO_PHOTO stays for them; this is the moving
+ * version of the same slot. The clip carries no audio track — it was stripped
+ * rather than muted, so there is nothing to unmute and nothing to download —
+ * and it is encoded with the index at the front so it starts on the first
+ * chunk instead of the last.
+ *
+ * `poster` is a still from three seconds in. It stands in before the video can
+ * play, and it is the whole backdrop for a visitor who has asked for reduced
+ * motion.
+ */
+export const HERO_VIDEO = {
+  src: "/home-video.mp4",
+  poster: "/home-video-poster.jpg",
+  // Faces sit a little above the middle of the frame, and a tall phone crops
+  // a 16:9 clip hard, so the crop is biased up to keep them in what survives.
+  position: "50% 42%",
+};
+
+/**
  * Per-treatment surface. `filter` works the photograph itself; `veil` is the
  * wash laid over it; `ink` is the colour the headline and closing line take,
  * since a night sky and a dusk sky do not want the same type; `base` is the

@@ -14,17 +14,16 @@ import {
  *
  * It exists for two reasons at once. The first is the feel: the counter runs
  * the moment the document paints, so the site answers instantly instead of
- * showing an empty sky while the skyline photograph arrives. The second is
- * the hero: the performance behind this screen measures the width of the
- * word "Toronto" to lay its line down, and it flies ninety-two frames of
- * dove art. Both want their assets in hand before the curtain lifts.
+ * showing an empty frame while the choir arrives. The second is the hero: the
+ * performance behind this screen measures the width of the word "Toronto" to
+ * lay its line down, and it wants the display font in hand before it does.
  *
  * So the count is floored, not faked. It runs 0 → 95 on its own clock, then
- * holds there until the hero's photograph, the first dove frames and the
- * display font have actually landed — with a cap, so a bad connection makes
- * the visitor wait a moment, never forever. `onDone` fires as the number
- * reaches 100, which is what cues the hero to begin, and the screen dissolves
- * off the top of the animation already playing underneath it.
+ * holds there until the backdrop's first frame and the display font have
+ * actually landed — with a cap, so a bad connection makes the visitor wait a
+ * moment, never forever. `onDone` fires as the number reaches 100, which is
+ * what cues the hero to begin, and the screen dissolves off the top of the
+ * animation already playing underneath it.
  */
 
 const FLOOR_MS = 1200; // 0 → 95, on the clock alone
@@ -44,42 +43,37 @@ const FIELD = "rgb(40, 16, 104)";
  */
 let playedThisDocument = false;
 
-/** Resolve when the image is in the cache — or when it is certain it won't be. */
-function preload(src: string) {
-  return new Promise<void>((resolve) => {
-    const img = new window.Image();
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
-    img.src = src;
-  });
-}
-
 /**
- * Resolve when the hero's skyline photograph has landed.
+ * Resolve when the hero's backdrop has something to show.
  *
- * It is waited on through its own element rather than by fetching the file:
- * next/image rewrites the src through the optimizer, so preloading
- * /cn_tower.webp would warm a URL the browser never asks for and the count
- * would clear over a blank sky anyway. The element is already in the document
- * — the hero renders alongside this screen — and `priority` has it fetching
- * from the first paint.
+ * It is waited on through the element itself rather than by fetching a file.
+ * For the choir clip that means the first frame has decoded — readyState 2,
+ * HAVE_CURRENT_DATA — and not the whole 3.3MB, which would hold the curtain
+ * up for most of a minute on a bad connection for no gain: the clip is
+ * encoded to start on its first chunk. For the still treatments it is the
+ * image, and next/image rewrites the src through the optimizer, so preloading
+ * the file by name would warm a URL the browser never asks for and the count
+ * would clear over a blank frame anyway.
+ *
+ * Either way the element is already in the document — the hero renders
+ * alongside this screen — so there is nothing to race.
  */
-function awaitHeroPhoto() {
+function awaitHeroBackdrop() {
   return new Promise<void>((resolve) => {
-    const el = document.querySelector<HTMLImageElement>("img[data-hero-photo]");
-    // The light-shaft treatment carries no photograph; nothing to wait for.
-    if (!el) return resolve();
-    if (el.complete) return resolve();
-    el.addEventListener("load", () => resolve(), { once: true });
-    el.addEventListener("error", () => resolve(), { once: true });
+    const video = document.querySelector<HTMLVideoElement>("video[data-hero-video]");
+    if (video) {
+      if (video.readyState >= 2) return resolve();
+      video.addEventListener("loadeddata", () => resolve(), { once: true });
+      video.addEventListener("error", () => resolve(), { once: true });
+      return;
+    }
+    const img = document.querySelector<HTMLImageElement>("img[data-hero-photo]");
+    // The light-shaft treatment carries no backdrop file; nothing to wait for.
+    if (!img || img.complete) return resolve();
+    img.addEventListener("load", () => resolve(), { once: true });
+    img.addEventListener("error", () => resolve(), { once: true });
   });
 }
-
-/** The dove frames the flight opens on; the rest stream in behind the hero. */
-const FIRST_DOVE_FRAMES = Array.from(
-  { length: 10 },
-  (_, i) => `/dove-flight/dove_${String(i + 1).padStart(3, "0")}.png`,
-);
 
 export default function LoadingScreen({ onDone }: { onDone: () => void }) {
   // Decided once, before the first paint, so the screen never flashes for a
@@ -155,7 +149,7 @@ export default function LoadingScreen({ onDone }: { onDone: () => void }) {
     // The logo is not on this list: it is rendered by next/image with
     // `priority`, which preloads it from the document head — and it is the one
     // thing on screen while we wait, so waiting on it would be circular.
-    const assets = Promise.all([fonts, awaitHeroPhoto(), ...FIRST_DOVE_FRAMES.map(preload)]);
+    const assets = Promise.all([fonts, awaitHeroBackdrop()]);
     const capped = new Promise<void>((resolve) => {
       window.setTimeout(resolve, floorMs + HOLD_MAX_MS);
     });
