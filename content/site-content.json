@@ -45,6 +45,10 @@
     {
       "name": "Prayer Meeting",
       "when": "Fridays, 7:00pm"
+    },
+    {
+      "name": "Children Program",
+      "when": "Saturdays, 1:00pm"
     }
   ],
   "upcomingEvents": [
