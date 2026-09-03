@@ -9,10 +9,13 @@ const nextConfig: NextConfig = {
   },
   images: {
     // The video gallery's posters are YouTube's own thumbnails, served from
-    // these two hosts. Nothing else is fetched from off-site.
+    // these two hosts. The photo gallery's pictures come from the church's
+    // Facebook album, which Facebook serves from a rotating set of regional
+    // hosts under fbcdn.net. Nothing else is fetched from off-site.
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
       { protocol: "https", hostname: "img.youtube.com", pathname: "/vi/**" },
+      { protocol: "https", hostname: "**.fbcdn.net" },
     ],
   },
 };

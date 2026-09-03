@@ -1,5 +1,6 @@
 import BentoGallery from "@/components/ui/bento-gallery";
 import { eyebrow, h2, PHOTOS, FACEBOOK_PHOTOS } from "@/lib/site";
+import { getFacebookPhotos } from "@/lib/facebook";
 
 /**
  * The photographs, under the videos on the Media page.
@@ -7,8 +8,16 @@ import { eyebrow, h2, PHOTOS, FACEBOOK_PHOTOS } from "@/lib/site";
  * The row runs the full width of the screen rather than stopping at the
  * container the heading keeps to: a row that is dragged should look like it
  * carries on past the edge, because it does.
+ *
+ * The pictures are the most recent from the church's Facebook album, refreshed
+ * every hour. When Facebook cannot be reached — or on a machine that has no
+ * token for it — the row falls back to the photographs kept in the repository,
+ * so the page is never empty and never broken.
  */
-export default function PhotoGallery() {
+export default async function PhotoGallery() {
+  const live = await getFacebookPhotos();
+  const photos = live.length > 0 ? live : PHOTOS;
+
   return (
     <section
       id="photos"
@@ -37,7 +46,7 @@ export default function PhotoGallery() {
           </a>
         </header>
 
-        <BentoGallery photos={PHOTOS} />
+        <BentoGallery photos={photos} />
       </div>
     </section>
   );
