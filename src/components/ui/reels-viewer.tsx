@@ -52,6 +52,51 @@ const chrome =
   "flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/45 text-white " +
   "backdrop-blur-sm transition-colors duration-200 hover:bg-black/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 
+/** How much of a caption is shown before it is opened out. */
+const CAPTION_LINES = "line-clamp-2";
+
+/**
+ * Whether an element is holding more than it is showing — a clamped caption
+ * with more to say.
+ *
+ * Measured rather than guessed from the length of the text, because whether
+ * two lines is enough depends on the width it is set at, and the same caption
+ * clamps in the phone and does not beside it. Watched as that width changes,
+ * so turning a laptop into a narrow window does not leave a button that opens
+ * nothing, or hide one that was needed.
+ *
+ * Only asked while collapsed: an unclamped element holds exactly what it
+ * shows, and would always answer no.
+ *
+ * `present` is whether the caption is in the page at all, and it has to be
+ * asked for rather than inferred. A ref filling in is not a render, so an
+ * effect watching only the reel and the fold sleeps through the caption
+ * appearing — which is exactly what the one over the video does, since it is
+ * built the moment the viewer opens and not before.
+ */
+function useClipped(
+  ref: React.RefObject<HTMLElement | null>,
+  current: number,
+  expanded: boolean,
+  present: boolean,
+) {
+  const [clipped, setClipped] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || expanded || !present) return;
+
+    const measure = () => setClipped(element.scrollHeight > element.clientHeight + 1);
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref, current, expanded, present]);
+
+  return clipped;
+}
+
 export default function ReelsViewer({ reels, moreUrl }: Props) {
   /** Armed on a laptop, open on a phone. */
   const [active, setActive] = useState(false);
@@ -64,14 +109,25 @@ export default function ReelsViewer({ reels, moreUrl }: Props) {
   /** Whether the phone is on screen at all — nothing plays to an empty room. */
   const [inView, setInView] = useState(true);
 
+  /** Whether the caption of the reel showing is opened out past its two lines. */
+  const [expanded, setExpanded] = useState(false);
+
   const screenRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const playRef = useRef<HTMLButtonElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
+  const asideCaptionRef = useRef<HTMLParagraphElement>(null);
+  const overlayCaptionRef = useRef<HTMLParagraphElement>(null);
   const videos = useRef<(HTMLVideoElement | null)[]>([]);
 
   const atEnd = current >= reels.length;
   const shown = reels[Math.min(current, reels.length - 1)];
+
+  // The two captions are measured apart. The same words clamp at the width of
+  // the phone and run to a line and a half beside it, so each surface has to
+  // be asked about itself.
+  const asideClipped = useClipped(asideCaptionRef, current, expanded, !atEnd);
+  const overlayClipped = useClipped(overlayCaptionRef, current, expanded, active);
 
   /* ---- arming and disarming ---- */
 
@@ -164,10 +220,12 @@ export default function ReelsViewer({ reels, moreUrl }: Props) {
 
   /* ---- playing ---- */
 
-  // A pause belongs to the reel that was paused. Moving on to the next one
-  // starts it, the way a flick on a phone would.
+  // A pause belongs to the reel that was paused, and so does an opened-out
+  // caption. Moving on to the next one starts it and folds its caption back,
+  // the way a flick on a phone would.
   useEffect(() => {
     setPaused(false);
+    setExpanded(false);
   }, [current]);
 
   // One reel plays: the one showing, while the viewer is open, on screen and
@@ -288,13 +346,43 @@ export default function ReelsViewer({ reels, moreUrl }: Props) {
                         beside the phone instead, and this is hidden. */}
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pb-6 pt-16 text-white md:hidden">
                       {reel.caption ? (
-                        <p className="m-0 line-clamp-4 whitespace-pre-line text-[14px] leading-snug">{reel.caption}</p>
+                        <p
+                          // Only the reel showing is measured; the other four
+                          // are off screen, and one of them is the one asked
+                          // about.
+                          ref={index === current ? overlayCaptionRef : undefined}
+                          className={cn(
+                            "m-0 whitespace-pre-line text-[14px] leading-snug",
+                            expanded
+                              ? // Opened out, a long caption would cover the
+                                // whole reel, so it is given a share of the
+                                // screen and scrolls within it. `contain` keeps
+                                // that scroll from turning into a swipe to the
+                                // next reel.
+                                "pointer-events-auto max-h-[38vh] overflow-y-auto overscroll-contain"
+                              : CAPTION_LINES,
+                          )}
+                        >
+                          {reel.caption}
+                        </p>
                       ) : null}
+
+                      {index === current && (expanded || overlayClipped) ? (
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((was) => !was)}
+                          aria-expanded={expanded}
+                          className="pointer-events-auto mt-1 cursor-pointer text-[13px] font-medium text-white/80 underline decoration-white/40 underline-offset-2 hover:text-white"
+                        >
+                          {expanded ? "Show less" : "See full caption"}
+                        </button>
+                      ) : null}
+
                       <p className="m-0 mt-1.5 text-[12px] text-white/70">
                         {reel.date}
                         {" · "}
                         <a
-                          href={reel.permalink}
+                          href={moreUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="pointer-events-auto underline decoration-white/40 underline-offset-2 hover:text-white"
@@ -420,15 +508,38 @@ export default function ReelsViewer({ reels, moreUrl }: Props) {
             There are many more where these came from.
           </p>
         ) : (
-          <p className="m-0 whitespace-pre-line text-[17px] leading-relaxed" style={{ color: "var(--ink)" }}>
-            {shown.caption ?? "A short video from the life of the church."}
-          </p>
+          <>
+            <p
+              ref={asideCaptionRef}
+              className={cn(
+                "m-0 whitespace-pre-line text-[17px] leading-relaxed",
+                !expanded && CAPTION_LINES,
+              )}
+              style={{ color: "var(--ink)" }}
+            >
+              {shown.caption ?? "A short video from the life of the church."}
+            </p>
+
+            {/* Shown only where there is more to read — or once it has been
+                read, to fold it back again. */}
+            {expanded || asideClipped ? (
+              <button
+                type="button"
+                onClick={() => setExpanded((was) => !was)}
+                aria-expanded={expanded}
+                className="w-fit cursor-pointer text-[15px] underline decoration-[color:var(--ink-48)] underline-offset-4 transition-colors hover:decoration-current"
+                style={{ color: "var(--ink-64)" }}
+              >
+                {expanded ? "Show less" : "See full caption"}
+              </button>
+            ) : null}
+          </>
         )}
         <p className="m-0 text-[14px]" style={{ color: "var(--ink-48)" }}>
           {atEnd ? null : <>{shown.date}</>}
         </p>
         <a
-          href={atEnd ? moreUrl : shown.permalink}
+          href={moreUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="w-fit text-[15px] underline decoration-[color:var(--ink-48)] underline-offset-4 transition-colors hover:decoration-current"

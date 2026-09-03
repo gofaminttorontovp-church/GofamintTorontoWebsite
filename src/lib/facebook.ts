@@ -16,8 +16,20 @@ import type { Photo } from "@/components/ui/bento-gallery";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-/** Facebook's links outlive this many times over; an hour is only tidiness. */
-const REVALIDATE_SECONDS = 60 * 60;
+/**
+ * How often the page goes back to Facebook: once a day.
+ *
+ * The ceiling on this is not politeness, it is the links themselves. The
+ * pictures and the videos come as signed URLs that die in about four and a
+ * half days, so whatever is cached has to be replaced comfortably before
+ * then. A day leaves days of room.
+ *
+ * Note that this is the age at which a cached page is called stale, not the
+ * oldest page a visitor can be served: Next hands out the stale copy while it
+ * fetches the new one. `expireTime` in next.config.ts is what bounds that,
+ * and it is set well inside the same four and a half days.
+ */
+const REVALIDATE_SECONDS = 24 * 60 * 60;
 
 /** The most Facebook will hand over at once. */
 const PAGE_SIZE = 100;
@@ -329,7 +341,6 @@ type GraphReel = {
   description?: string;
   source?: string;
   picture?: string;
-  permalink_url?: string;
   created_time: string;
   length?: number;
 };
@@ -345,8 +356,6 @@ export type Reel = {
   caption: string | null;
   /** The day it was posted, written out — "3 September 2026". */
   date: string;
-  /** The reel on Facebook, for anyone who wants the rest. */
-  permalink: string;
   seconds: number;
 };
 
@@ -366,16 +375,14 @@ async function pageToken(pageId: string): Promise<string | null> {
 }
 
 function toReel(reel: GraphReel): Reel | null {
-  if (!reel.source || !reel.picture || !reel.permalink_url) return null;
+  if (!reel.source || !reel.picture) return null;
 
-  const caption = reel.description?.trim() || null;
   return {
     id: reel.id,
     src: reel.source,
     poster: reel.picture,
-    caption,
+    caption: reel.description?.trim() || null,
     date: formatDate(torontoDay(new Date(reel.created_time))),
-    permalink: reel.permalink_url,
     seconds: reel.length ?? 0,
   };
 }
@@ -394,7 +401,7 @@ export async function getFacebookReels(): Promise<Reel[]> {
   const reels = await graph<{ data: GraphReel[] }>(
     `${pageId}/video_reels`,
     {
-      fields: "id,description,source,picture,permalink_url,created_time,length",
+      fields: "id,description,source,picture,created_time,length",
       limit: String(REELS_TO_SHOW),
     },
     token,
