@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import type { SiteContent } from "@/lib/content";
-import { humanize, parseYouTubeId, randomSuffix, slugify } from "./lib";
+import { parseYouTubeId, randomSuffix } from "./lib";
 
 /**
  * The section editors: one per editable part of the site, sharing the same
@@ -165,116 +165,6 @@ function move<T>(list: T[], index: number, delta: number) {
   if (target < 0 || target >= list.length) return;
   const [item] = list.splice(index, 1);
   list.splice(target, 0, item);
-}
-
-/* ---------------------------------------------------------------
-   Photo gallery
-   --------------------------------------------------------------- */
-
-export function PhotosEditor({ content, update, stageImage, imgSrc, onError }: EditorProps) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [adding, setAdding] = useState(false);
-
-  const addPhotos = async (files: File[]) => {
-    setAdding(true);
-    try {
-      for (const file of files) {
-        const staged = await stageImage("photos", file);
-        const title = humanize(file.name);
-        update((draft) => {
-          draft.photos.push({
-            id: `${slugify(file.name)}-${randomSuffix()}`,
-            src: staged.url,
-            alt: title,
-            title,
-            caption: "",
-          });
-        });
-      }
-      setOpenIndex(null);
-    } catch (error) {
-      onError(error instanceof Error ? error.message : "That photo couldn't be added.");
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const replacePhoto = async (index: number, file: File) => {
-    try {
-      const staged = await stageImage("photos", file);
-      update((draft) => {
-        draft.photos[index].src = staged.url;
-      });
-    } catch (error) {
-      onError(error instanceof Error ? error.message : "That photo couldn't be read.");
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <p className="text-[14px] leading-relaxed text-neutral-500">
-        These are the photographs in the gallery on the Media page, in the order shown. Tap one to
-        edit or replace it.
-      </p>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {content.photos.map((photo, index) => (
-          <button
-            key={photo.id}
-            type="button"
-            onClick={() => setOpenIndex(openIndex === index ? null : index)}
-            className={`relative aspect-square overflow-hidden rounded-xl border-2 ${
-              openIndex === index ? "border-indigo-600" : "border-transparent"
-            }`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imgSrc(photo.src)} alt={photo.alt} className="h-full w-full object-cover" />
-          </button>
-        ))}
-      </div>
-
-      {openIndex !== null && content.photos[openIndex] && (
-        <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[13px] font-semibold text-neutral-700">
-              Photo {openIndex + 1} of {content.photos.length}
-            </span>
-            <RowTools
-              onUp={openIndex > 0 ? () => { update((draft) => move(draft.photos, openIndex, -1)); setOpenIndex(openIndex - 1); } : undefined}
-              onDown={openIndex < content.photos.length - 1 ? () => { update((draft) => move(draft.photos, openIndex, 1)); setOpenIndex(openIndex + 1); } : undefined}
-              onRemove={() => {
-                update((draft) => { draft.photos.splice(openIndex, 1); });
-                setOpenIndex(null);
-              }}
-            />
-          </div>
-          <Field
-            label="Title"
-            value={content.photos[openIndex].title}
-            onChange={(value) => update((draft) => { draft.photos[openIndex].title = value; })}
-          />
-          <Field
-            label="Caption"
-            value={content.photos[openIndex].caption}
-            onChange={(value) =>
-              update((draft) => {
-                draft.photos[openIndex].caption = value;
-                if (!draft.photos[openIndex].alt.trim()) draft.photos[openIndex].alt = value;
-              })
-            }
-            hint="A line about the picture, shown when it is opened."
-          />
-          <PickButton label="Replace this photo" onFiles={(files) => replacePhoto(openIndex, files[0])} />
-        </div>
-      )}
-
-      <PickButton
-        label={adding ? "Adding…" : "Add photos"}
-        primary
-        multiple
-        onFiles={addPhotos}
-      />
-    </div>
-  );
 }
 
 /* ---------------------------------------------------------------
