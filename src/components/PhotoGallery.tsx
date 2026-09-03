@@ -1,6 +1,6 @@
 import BentoGallery from "@/components/ui/bento-gallery";
 import { eyebrow, h2, PHOTOS, FACEBOOK_PHOTOS } from "@/lib/site";
-import { getFacebookPhotos } from "@/lib/facebook";
+import { getFacebookPhotoRows } from "@/lib/facebook";
 
 /**
  * The photographs, under the videos on the Media page.
@@ -9,14 +9,17 @@ import { getFacebookPhotos } from "@/lib/facebook";
  * container the heading keeps to: a row that is dragged should look like it
  * carries on past the edge, because it does.
  *
- * The pictures are the most recent from the church's Facebook album, refreshed
- * every hour. When Facebook cannot be reached — or on a machine that has no
- * token for it — the row falls back to the photographs kept in the repository,
- * so the page is never empty and never broken.
+ * The pictures come from the church's Facebook album, refreshed every hour, in
+ * two rows: this week and last week. A week turns on a Sunday, so the most
+ * recent Sunday service heads "this week" rather than trailing the week
+ * before. A quiet week is left out rather than shown empty.
+ *
+ * When Facebook cannot be reached — or on a machine that has no token for it —
+ * this falls back to the photographs kept in the repository, as one unlabelled
+ * row, so the page is never empty and never broken.
  */
 export default async function PhotoGallery() {
-  const live = await getFacebookPhotos();
-  const photos = live.length > 0 ? live : PHOTOS;
+  const rows = await getFacebookPhotoRows();
 
   return (
     <section
@@ -46,7 +49,20 @@ export default async function PhotoGallery() {
           </a>
         </header>
 
-        <BentoGallery photos={photos} />
+        {rows.length > 0 ? (
+          <div className="flex flex-col gap-10 md:gap-12">
+            {rows.map((row) => (
+              <section key={row.key} className="flex flex-col gap-4">
+                <h3 style={eyebrow} className="m-0">
+                  {row.label}
+                </h3>
+                <BentoGallery photos={row.photos} />
+              </section>
+            ))}
+          </div>
+        ) : (
+          <BentoGallery photos={PHOTOS} />
+        )}
       </div>
     </section>
   );

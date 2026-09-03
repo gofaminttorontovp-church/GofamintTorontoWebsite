@@ -19,20 +19,34 @@ const GRAPH = "https://graph.facebook.com/v21.0";
 /** Facebook's links outlive this many times over; an hour is only tidiness. */
 const REVALIDATE_SECONDS = 60 * 60;
 
-/** One row's worth. The row is dragged, so it may be longer than the screen. */
-const DEFAULT_LIMIT = 24;
+/** The most Facebook will hand over at once. */
+const PAGE_SIZE = 100;
+
+/**
+ * How far back to keep asking. Two weeks of a busy fortnight fits in one or
+ * two pages; the cap is only here so that a quiet album — where the fortnight
+ * we want is never reached — cannot walk the whole history.
+ */
+const MAX_PAGES = 4;
+
+/**
+ * One row's worth. A week can run to seventy photographs, which is more than
+ * a row wants to carry and more than the page wants to load; the rest are a
+ * click away on Facebook.
+ */
+const MAX_PER_ROW = 24;
 
 /** Beyond this width a picture is only heavier, never sharper on this page. */
 const MAX_USEFUL_WIDTH = 2048;
 
 /**
- * Which tiles in the row are given double width.
+ * Which tiles in a row are given double width.
  *
  * The reference design mixed wide tiles among square ones, and the first
  * version of this file tried to earn that mix from the photographs: landscape
  * gets the wider tile. It turned out every photograph the church posts is
  * exactly four by three — one camera, held one way — so every tile qualified
- * and the row became twenty-four identical slabs.
+ * and the row became two dozen identical slabs.
  *
  * So the rhythm is set here instead, as the reference set it: by hand. The
  * pattern is seven long rather than four so that it does not fall into step
@@ -40,6 +54,9 @@ const MAX_USEFUL_WIDTH = 2048;
  * browser lay the row out the same way.
  */
 const WIDE_RHYTHM = [true, false, false, false, true, false, false];
+
+/** The church keeps Toronto time, and its week turns on a Sunday. */
+const TIME_ZONE = "America/Toronto";
 
 type GraphImage = { source: string; width: number; height: number };
 
@@ -51,6 +68,11 @@ type GraphPhoto = {
 };
 
 type GraphAlbum = { id: string; type: string };
+
+type Paged<T> = { data: T[]; paging?: { cursors?: { after?: string } } };
+
+/** A labelled row of photographs on the Media page. */
+export type PhotoRow = { key: string; label: string; photos: Photo[] };
 
 /**
  * Ask Facebook for something, and treat every failure the same way: as
@@ -93,6 +115,56 @@ async function wallAlbumId(pageId: string): Promise<string | null> {
   return albums?.data.find((album) => album.type === "wall")?.id ?? null;
 }
 
+/* ------------------------------------------------------------------
+   Days and weeks, in Toronto
+
+   Everything here compares calendar days as "YYYY-MM-DD" strings rather than
+   as instants. Toronto changes its clocks twice a year, and a string of the
+   day it was in Toronto is not something an hour's shift can move.
+   ------------------------------------------------------------------ */
+
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** The day it was in Toronto when this happened, as "YYYY-MM-DD". */
+function torontoDay(when: Date): string {
+  return dayFormatter.format(when);
+}
+
+/** The same day as a UTC noon instant — far enough from either edge that no
+ *  clock change can push the arithmetic onto the day before or after. */
+function noonUTC(day: string): number {
+  const [year, month, date] = day.split("-").map(Number);
+  return Date.UTC(year, month - 1, date, 12);
+}
+
+function toDay(instant: number): string {
+  const d = new Date(instant);
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const date = String(d.getUTCDate()).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${month}-${date}`;
+}
+
+/** The Sunday on or before the given day. */
+function weekStart(day: string): string {
+  const noon = noonUTC(day);
+  const sinceSunday = new Date(noon).getUTCDay(); // 0 is Sunday
+  return toDay(noon - sinceSunday * 86_400_000);
+}
+
+/** The day before the given day. */
+function dayBefore(day: string): string {
+  return toDay(noonUTC(day) - 86_400_000);
+}
+
+/* ------------------------------------------------------------------
+   Turning Facebook's photographs into the row's
+   ------------------------------------------------------------------ */
+
 /** The largest copy that is still worth sending down the wire. */
 function bestImage(images: GraphImage[]): GraphImage | null {
   if (images.length === 0) return null;
@@ -101,20 +173,21 @@ function bestImage(images: GraphImage[]): GraphImage | null {
   return candidates.reduce((widest, image) => (image.width > widest.width ? image : widest));
 }
 
-function formatDate(iso: string): string {
+function formatDate(day: string): string {
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: "America/Toronto",
-  }).format(new Date(iso));
+    timeZone: "UTC",
+  }).format(new Date(noonUTC(day)));
 }
 
-function toPhoto(photo: GraphPhoto, index: number): Photo | null {
+/** One photograph, or null where Facebook sent no usable image. */
+function toPhoto(photo: GraphPhoto): Photo | null {
   const image = bestImage(photo.images ?? []);
   if (!image) return null;
 
-  const date = formatDate(photo.created_time);
+  const date = formatDate(torontoDay(new Date(photo.created_time)));
   // Facebook's own caption, where there is one. Its first line is the part
   // written for a reader; the rest is usually hashtags.
   const caption = photo.name?.split("\n")[0]?.trim() || null;
@@ -127,33 +200,103 @@ function toPhoto(photo: GraphPhoto, index: number): Photo | null {
     alt: caption ?? `Photograph from the life of the church, ${date}`,
     title: caption ?? date,
     caption: caption ? date : undefined,
-    // The rhythm decides which tiles are wide; the shape of the picture only
-    // gets a veto, so that a portrait is never stretched across two.
-    wide: WIDE_RHYTHM[index % WIDE_RHYTHM.length] && image.width > image.height,
   };
 }
 
 /**
- * The most recent photographs from the church's Facebook album, newest first.
- * Returns an empty list if Facebook cannot be reached or is not configured;
- * the caller falls back to the photographs kept in the repository.
+ * Lay the rhythm over a row. The shape of each picture only gets a veto, so
+ * that a portrait is never stretched across two tiles.
  */
-export async function getFacebookPhotos(limit: number = DEFAULT_LIMIT): Promise<Photo[]> {
+function withRhythm(photos: Photo[], shapes: Map<string, GraphImage>): Photo[] {
+  return photos.map((photo, index) => {
+    const image = shapes.get(photo.id);
+    const landscape = image ? image.width > image.height : false;
+    return { ...photo, wide: WIDE_RHYTHM[index % WIDE_RHYTHM.length] && landscape };
+  });
+}
+
+/* ------------------------------------------------------------------
+   The rows
+   ------------------------------------------------------------------ */
+
+/**
+ * Walk the album newest-first until we have gone past the day we care about,
+ * or until the page cap stops us.
+ */
+async function photosSince(albumId: string, earliestDay: string): Promise<GraphPhoto[]> {
+  const collected: GraphPhoto[] = [];
+  let after: string | undefined;
+
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const query: Record<string, string> = {
+      fields: "id,name,created_time,images",
+      limit: String(PAGE_SIZE),
+    };
+    if (after) query.after = after;
+
+    const response = await graph<Paged<GraphPhoto>>(`${albumId}/photos`, query);
+    const batch = response?.data ?? [];
+    if (batch.length === 0) break;
+
+    collected.push(...batch);
+
+    // The album is newest-first, so once a page ends before the fortnight
+    // begins there is nothing older worth asking for.
+    const oldest = batch[batch.length - 1];
+    if (torontoDay(new Date(oldest.created_time)) < earliestDay) break;
+
+    after = response?.paging?.cursors?.after;
+    if (!after) break;
+  }
+
+  return collected;
+}
+
+/**
+ * This week's photographs and last week's, newest first, as two rows. Weeks
+ * turn on a Sunday, so the most recent Sunday service is at the head of "this
+ * week" rather than the tail of the week before.
+ *
+ * Returns an empty list if Facebook cannot be reached or is not configured, or
+ * if the fortnight was a quiet one; the caller falls back to the photographs
+ * kept in the repository.
+ */
+export async function getFacebookPhotoRows(): Promise<PhotoRow[]> {
   const pageId = process.env.FACEBOOK_PAGE_ID;
   if (!pageId) return [];
 
   const albumId = await wallAlbumId(pageId);
   if (!albumId) return [];
 
-  const photos = await graph<{ data: GraphPhoto[] }>(`${albumId}/photos`, {
-    fields: "id,name,created_time,images",
-    limit: String(limit),
-  });
+  const thisWeekStart = weekStart(torontoDay(new Date()));
+  const lastWeekStart = weekStart(dayBefore(thisWeekStart));
 
-  // Anything Facebook returns without a usable image is dropped before the
-  // rhythm is applied, so the pattern counts the tiles actually drawn.
-  return (photos?.data ?? [])
-    .filter((photo) => bestImage(photo.images ?? []) !== null)
-    .map(toPhoto)
-    .filter((photo): photo is Photo => photo !== null);
+  const raw = await photosSince(albumId, lastWeekStart);
+
+  // Keep each picture's shape to hand, so the rhythm can decline to widen a
+  // portrait without having to carry the dimensions through Photo itself.
+  const shapes = new Map<string, GraphImage>();
+  for (const photo of raw) {
+    const image = bestImage(photo.images ?? []);
+    if (image) shapes.set(photo.id, image);
+  }
+
+  const rows: PhotoRow[] = [
+    { key: "this-week", label: "This week", photos: [] },
+    { key: "last-week", label: "Last week", photos: [] },
+  ];
+
+  for (const raw_photo of raw) {
+    const day = torontoDay(new Date(raw_photo.created_time));
+    const row =
+      day >= thisWeekStart ? rows[0] : day >= lastWeekStart ? rows[1] : null;
+    if (!row || row.photos.length >= MAX_PER_ROW) continue;
+
+    const photo = toPhoto(raw_photo);
+    if (photo) row.photos.push(photo);
+  }
+
+  return rows
+    .filter((row) => row.photos.length > 0)
+    .map((row) => ({ ...row, photos: withRhythm(row.photos, shapes) }));
 }
