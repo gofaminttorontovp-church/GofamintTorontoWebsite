@@ -16,20 +16,36 @@ import type { Photo } from "@/components/ui/bento-gallery";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
+const HOUR = 60 * 60;
+const DAY = 24 * HOUR;
+
 /**
- * How often the page goes back to Facebook: once a day.
- *
- * The ceiling on this is not politeness, it is the links themselves. The
- * pictures and the videos come as signed URLs that die in about four and a
- * half days, so whatever is cached has to be replaced comfortably before
- * then. A day leaves days of room.
- *
- * Note that this is the age at which a cached page is called stale, not the
- * oldest page a visitor can be served: Next hands out the stale copy while it
- * fetches the new one. `expireTime` in next.config.ts is what bounds that,
- * and it is set well inside the same four and a half days.
+ * How often the reels are asked for again. They are posted and then wanted
+ * quickly, and there are only ever five of them to fetch.
  */
-const REVALIDATE_SECONDS = 24 * 60 * 60;
+const REELS_REVALIDATE = 6 * HOUR;
+
+/**
+ * The longest the photographs are held before asking again. They arrive in
+ * their own time — a Sunday's pictures may not be posted for days — so there
+ * is little won by asking more often than this.
+ */
+const PHOTOS_REVALIDATE_CAP = DAY;
+
+/**
+ * Except across a Sunday evening. The week's pictures are usually up by seven,
+ * so nothing fetched before then is allowed to outlive it. See
+ * `photosRevalidate`.
+ */
+const SUNDAY_EVENING_HOUR = 19;
+
+/**
+ * None of these is the oldest page a visitor can be handed — only the age at
+ * which a cached copy is called stale. Next serves the stale copy and fetches
+ * behind it. `expireTime` in next.config.ts is what caps the rest, and the two
+ * together are what keep a served page inside the four and a half days that
+ * Facebook's signed links live.
+ */
 
 /** The most Facebook will hand over at once. */
 const PAGE_SIZE = 100;
@@ -96,6 +112,7 @@ export type PhotoRow = { key: string; label: string; photos: Photo[] };
 async function graph<T>(
   path: string,
   query: Record<string, string>,
+  revalidate: number,
   token: string | undefined = process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
 ): Promise<T | null> {
   if (!token) return null;
@@ -108,7 +125,7 @@ async function graph<T>(
       // The token travels in the header, never in the query string, so it
       // stays out of logs and out of anything that records a URL.
       headers: { Authorization: `Bearer ${token}` },
-      next: { revalidate: REVALIDATE_SECONDS },
+      next: { revalidate },
     });
     if (!response.ok) return null;
 
@@ -125,11 +142,12 @@ async function graph<T>(
  * `/photos` directly returns the photographs the Page was *tagged* in, which
  * is a different and much smaller set, so we go to the album by name.
  */
-async function wallAlbumId(pageId: string): Promise<string | null> {
-  const albums = await graph<{ data: GraphAlbum[] }>(`${pageId}/albums`, {
-    fields: "id,type",
-    limit: "50",
-  });
+async function wallAlbumId(pageId: string, revalidate: number): Promise<string | null> {
+  const albums = await graph<{ data: GraphAlbum[] }>(
+    `${pageId}/albums`,
+    { fields: "id,type", limit: "50" },
+    revalidate,
+  );
   return albums?.data.find((album) => album.type === "wall")?.id ?? null;
 }
 
@@ -177,6 +195,57 @@ function weekStart(day: string): string {
 /** The day before the given day. */
 function dayBefore(day: string): string {
   return toDay(noonUTC(day) - 86_400_000);
+}
+
+const clockFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+/** How far into the day it is in Toronto, in seconds. */
+function torontoSecondsIntoDay(when: Date): number {
+  const [hours, minutes, seconds] = clockFormatter.format(when).split(":").map(Number);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+/**
+ * How long the photographs may be held before asking Facebook again.
+ *
+ * A day at most, and less than that in the hours after a Sunday evening —
+ * because what is wanted is not a fetch *at* seven on Sunday, but that nothing
+ * fetched *before* seven still be on the page after it.
+ *
+ * So the answer is the time that has passed *since* the last Sunday at seven,
+ * capped at a day. Held up against the age of what is cached, that says
+ * exactly the right thing: anything stored before that hour is older than the
+ * hour is, and goes; anything stored after it is younger, and stays. By the
+ * Wednesday the cap has taken over and it is a plain daily refresh again.
+ *
+ * Counting the other way — time *until* the next Sunday at seven — reads just
+ * as naturally and is precisely wrong. It shortens as the hour approaches, so
+ * it refetches at a minute to seven, while the week's pictures are still being
+ * posted, and then hands out a fresh day-long hold at the very moment they
+ * arrive.
+ *
+ * A day is counted here as twenty-four hours, which it is not on the two days
+ * a year Toronto moves its clocks; the hour of slack that costs is recovered
+ * on the next build.
+ */
+function photosRevalidate(now: Date = new Date()): number {
+  const today = torontoDay(now);
+  const weekday = new Date(noonUTC(today)).getUTCDay(); // 0 is Sunday
+
+  let sinceSundayEvening =
+    weekday * 86_400 + torontoSecondsIntoDay(now) - SUNDAY_EVENING_HOUR * 3600;
+
+  // Sunday, but not yet seven: the last one was a week ago.
+  if (sinceSundayEvening < 0) sinceSundayEvening += 7 * 86_400;
+
+  // A floor, so that seven o'clock itself does not refetch on every visit.
+  return Math.max(60, Math.min(PHOTOS_REVALIDATE_CAP, Math.round(sinceSundayEvening)));
 }
 
 /* ------------------------------------------------------------------
@@ -241,7 +310,11 @@ function withRhythm(photos: Photo[], shapes: Map<string, GraphImage>): Photo[] {
  * Walk the album newest-first until we have gone past the day we care about,
  * or until the page cap stops us.
  */
-async function photosSince(albumId: string, earliestDay: string): Promise<GraphPhoto[]> {
+async function photosSince(
+  albumId: string,
+  earliestDay: string,
+  revalidate: number,
+): Promise<GraphPhoto[]> {
   const collected: GraphPhoto[] = [];
   let after: string | undefined;
 
@@ -252,7 +325,7 @@ async function photosSince(albumId: string, earliestDay: string): Promise<GraphP
     };
     if (after) query.after = after;
 
-    const response = await graph<Paged<GraphPhoto>>(`${albumId}/photos`, query);
+    const response = await graph<Paged<GraphPhoto>>(`${albumId}/photos`, query, revalidate);
     const batch = response?.data ?? [];
     if (batch.length === 0) break;
 
@@ -283,13 +356,14 @@ export async function getFacebookPhotoRows(): Promise<PhotoRow[]> {
   const pageId = process.env.FACEBOOK_PAGE_ID;
   if (!pageId) return [];
 
-  const albumId = await wallAlbumId(pageId);
+  const revalidate = photosRevalidate();
+  const albumId = await wallAlbumId(pageId, revalidate);
   if (!albumId) return [];
 
   const thisWeekStart = weekStart(torontoDay(new Date()));
   const lastWeekStart = weekStart(dayBefore(thisWeekStart));
 
-  const raw = await photosSince(albumId, lastWeekStart);
+  const raw = await photosSince(albumId, lastWeekStart, revalidate);
 
   // Keep each picture's shape to hand, so the rhythm can decline to widen a
   // portrait without having to carry the dimensions through Photo itself.
@@ -370,7 +444,11 @@ export type Reel = {
  * secret, but a derived one — nothing new for anyone to keep safe.
  */
 async function pageToken(pageId: string): Promise<string | null> {
-  const page = await graph<{ access_token?: string }>(pageId, { fields: "access_token" });
+  const page = await graph<{ access_token?: string }>(
+    pageId,
+    { fields: "access_token" },
+    REELS_REVALIDATE,
+  );
   return page?.access_token ?? null;
 }
 
@@ -404,6 +482,7 @@ export async function getFacebookReels(): Promise<Reel[]> {
       fields: "id,description,source,picture,created_time,length",
       limit: String(REELS_TO_SHOW),
     },
+    REELS_REVALIDATE,
     token,
   );
 
