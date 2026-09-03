@@ -241,4 +241,7 @@ export const VIDEOS = SITE_CONTENT.videos;
 
 export const FACEBOOK_PHOTOS = "https://www.facebook.com/GOFAMINTTORONTO/photos";
 
+/** The Page's reels, for the "Short Videos" section and its closing card. */
+export const FACEBOOK_REELS = "https://www.facebook.com/GOFAMINTTORONTO/reels/";
+
 export const PHOTOS = SITE_CONTENT.photos;

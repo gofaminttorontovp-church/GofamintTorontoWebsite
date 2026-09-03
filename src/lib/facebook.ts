@@ -77,9 +77,15 @@ export type PhotoRow = { key: string; label: string; photos: Photo[] };
 /**
  * Ask Facebook for something, and treat every failure the same way: as
  * nothing. A page that has lost its photographs should still be a page.
+ *
+ * The token is the system user's unless one is handed in — the reels
+ * endpoint wants a Page's own, see `pageToken`.
  */
-async function graph<T>(path: string, query: Record<string, string>): Promise<T | null> {
-  const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+async function graph<T>(
+  path: string,
+  query: Record<string, string>,
+  token: string | undefined = process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
+): Promise<T | null> {
   if (!token) return null;
 
   const url = new URL(`${GRAPH}/${path}`);
@@ -299,4 +305,103 @@ export async function getFacebookPhotoRows(): Promise<PhotoRow[]> {
   return rows
     .filter((row) => row.photos.length > 0)
     .map((row) => ({ ...row, photos: withRhythm(row.photos, shapes) }));
+}
+
+/* ------------------------------------------------------------------
+   The reels
+
+   Short vertical videos, posted to the Page as reels. Facebook hands over
+   a direct MP4 for each — served with byte ranges and open CORS, so a plain
+   <video> can play it — along with a poster, a caption and a link back.
+   The MP4 links are signed like the photographs' and die on the same
+   schedule, so they too are fetched afresh each hour and never kept.
+   ------------------------------------------------------------------ */
+
+/**
+ * How many reels the page shows, ever. Five, and then Facebook. Each one is
+ * a dozen megabytes, so this is a limit on what a visitor is asked to carry
+ * as much as on what the page shows.
+ */
+const REELS_TO_SHOW = 5;
+
+type GraphReel = {
+  id: string;
+  description?: string;
+  source?: string;
+  picture?: string;
+  permalink_url?: string;
+  created_time: string;
+  length?: number;
+};
+
+/** One short video, ready for the page. */
+export type Reel = {
+  id: string;
+  /** A direct MP4, good for a few days. */
+  src: string;
+  /** A still from it, to show before it plays. */
+  poster: string;
+  /** Facebook's own caption. Reels, unlike the photographs, nearly always have one. */
+  caption: string | null;
+  /** The day it was posted, written out — "3 September 2026". */
+  date: string;
+  /** The reel on Facebook, for anyone who wants the rest. */
+  permalink: string;
+  seconds: number;
+};
+
+/**
+ * The Page's own access token, derived from the system user's.
+ *
+ * Nearly everything answers to the system-user token. The reels edge is the
+ * exception: it refuses a user-type token outright ("a Page access token is
+ * required for this call for the new Pages experience"). A Page token can be
+ * asked for with the token we have, so we ask, and the hourly cache keeps
+ * that to one request an hour rather than one a visit. It is a second
+ * secret, but a derived one — nothing new for anyone to keep safe.
+ */
+async function pageToken(pageId: string): Promise<string | null> {
+  const page = await graph<{ access_token?: string }>(pageId, { fields: "access_token" });
+  return page?.access_token ?? null;
+}
+
+function toReel(reel: GraphReel): Reel | null {
+  if (!reel.source || !reel.picture || !reel.permalink_url) return null;
+
+  const caption = reel.description?.trim() || null;
+  return {
+    id: reel.id,
+    src: reel.source,
+    poster: reel.picture,
+    caption,
+    date: formatDate(torontoDay(new Date(reel.created_time))),
+    permalink: reel.permalink_url,
+    seconds: reel.length ?? 0,
+  };
+}
+
+/**
+ * The five most recent reels, newest first. An empty list when Facebook
+ * cannot be reached or is not configured; the section is simply not drawn.
+ */
+export async function getFacebookReels(): Promise<Reel[]> {
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  if (!pageId) return [];
+
+  const token = await pageToken(pageId);
+  if (!token) return [];
+
+  const reels = await graph<{ data: GraphReel[] }>(
+    `${pageId}/video_reels`,
+    {
+      fields: "id,description,source,picture,permalink_url,created_time,length",
+      limit: String(REELS_TO_SHOW),
+    },
+    token,
+  );
+
+  return (reels?.data ?? [])
+    .map(toReel)
+    .filter((reel): reel is Reel => reel !== null)
+    .slice(0, REELS_TO_SHOW);
 }
