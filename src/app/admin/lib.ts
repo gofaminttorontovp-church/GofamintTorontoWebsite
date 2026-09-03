@@ -18,12 +18,6 @@ export function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 8);
 }
 
-/** "IMG_3672" → "Img 3672"; "sunday-service" → "Sunday service". */
-export function humanize(filename: string): string {
-  const words = slugify(filename).replace(/-/g, " ").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "New photo";
-}
-
 export type ResizedImage = {
   /** Base64 without the data: prefix, ready for the upload endpoint. */
   base64: string;

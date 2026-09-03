@@ -1,5 +1,6 @@
 import BentoGallery from "@/components/ui/bento-gallery";
 import { eyebrow, h2, PHOTOS, FACEBOOK_PHOTOS } from "@/lib/site";
+import { getFacebookPhotos } from "@/lib/facebook";
 
 /**
  * The photographs, under the videos on the Media page.
@@ -7,8 +8,19 @@ import { eyebrow, h2, PHOTOS, FACEBOOK_PHOTOS } from "@/lib/site";
  * The row runs the full width of the screen rather than stopping at the
  * container the heading keeps to: a row that is dragged should look like it
  * carries on past the edge, because it does.
+ *
+ * The pictures are this week's, from the church's Facebook album. A week turns
+ * on a Sunday, so the most recent Sunday service heads the row rather than
+ * trailing the week before.
+ *
+ * When Facebook cannot be reached — or on a machine that has no token for it,
+ * or on a Sunday morning before the week's first pictures are posted — this
+ * falls back to the photographs kept in the repository. Those are not this
+ * week's and are not labelled as though they were.
  */
-export default function PhotoGallery() {
+export default async function PhotoGallery() {
+  const live = await getFacebookPhotos();
+
   return (
     <section
       id="photos"
@@ -37,7 +49,16 @@ export default function PhotoGallery() {
           </a>
         </header>
 
-        <BentoGallery photos={PHOTOS} />
+        {live.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            <h3 style={eyebrow} className="m-0">
+              This week
+            </h3>
+            <BentoGallery photos={live} />
+          </div>
+        ) : (
+          <BentoGallery photos={PHOTOS} />
+        )}
       </div>
     </section>
   );

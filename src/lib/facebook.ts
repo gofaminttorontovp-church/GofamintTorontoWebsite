@@ -1,0 +1,476 @@
+import type { Photo } from "@/components/ui/bento-gallery";
+
+/**
+ * The photographs on the Media page, read from the church's Facebook album.
+ *
+ * Facebook hands us the pictures and nothing else: of a hundred recent
+ * photographs, two carried a caption and none carried a description. So the
+ * captions here are the only thing we can say truthfully about a picture we
+ * have not seen — the day it was posted. Nothing about the occasion is
+ * asserted, because nothing about the occasion is known.
+ *
+ * The image links Facebook returns are signed and die after about five days,
+ * which is why they are never written to disk. They are fetched afresh every
+ * hour and handed straight to the page.
+ */
+
+const GRAPH = "https://graph.facebook.com/v21.0";
+
+const HOUR = 60 * 60;
+const DAY = 24 * HOUR;
+
+/**
+ * How often the reels are asked for again. They are posted and then wanted
+ * quickly, and there are only ever five of them to fetch.
+ */
+const REELS_REVALIDATE = 6 * HOUR;
+
+/**
+ * The longest the photographs are held before asking again. They arrive in
+ * their own time — a Sunday's pictures may not be posted for days — so there
+ * is little won by asking more often than this.
+ */
+const PHOTOS_REVALIDATE_CAP = DAY;
+
+/**
+ * Except across a Sunday evening. The week's pictures are usually up by seven,
+ * so nothing fetched before then is allowed to outlive it. See
+ * `photosRevalidate`.
+ */
+const SUNDAY_EVENING_HOUR = 19;
+
+/**
+ * None of these is the oldest page a visitor can be handed — only the age at
+ * which a cached copy is called stale. Next serves the stale copy and fetches
+ * behind it. `expireTime` in next.config.ts is what caps the rest, and the two
+ * together are what keep a served page inside the four and a half days that
+ * Facebook's signed links live.
+ */
+
+/** The most Facebook will hand over at once. */
+const PAGE_SIZE = 100;
+
+/**
+ * How far back to keep asking. Two weeks of a busy fortnight fits in one or
+ * two pages; the cap is only here so that a quiet album — where the fortnight
+ * we want is never reached — cannot walk the whole history.
+ */
+const MAX_PAGES = 4;
+
+/**
+ * One row's worth. A week can run to seventy photographs, which is more than
+ * a row wants to carry and more than the page wants to load; the rest are a
+ * click away on Facebook.
+ */
+const MAX_PHOTOS = 24;
+
+/** Beyond this width a picture is only heavier, never sharper on this page. */
+const MAX_USEFUL_WIDTH = 2048;
+
+/**
+ * Which tiles in a row are given double width.
+ *
+ * The reference design mixed wide tiles among square ones, and the first
+ * version of this file tried to earn that mix from the photographs: landscape
+ * gets the wider tile. It turned out every photograph the church posts is
+ * exactly four by three — one camera, held one way — so every tile qualified
+ * and the row became two dozen identical slabs.
+ *
+ * So the rhythm is set here instead, as the reference set it: by hand. The
+ * pattern is seven long rather than four so that it does not fall into step
+ * with the eye, and it is fixed rather than random so that the server and the
+ * browser lay the row out the same way.
+ */
+const WIDE_RHYTHM = [true, false, false, false, true, false, false];
+
+/** The church keeps Toronto time, and its week turns on a Sunday. */
+const TIME_ZONE = "America/Toronto";
+
+type GraphImage = { source: string; width: number; height: number };
+
+type GraphPhoto = {
+  id: string;
+  name?: string;
+  created_time: string;
+  images?: GraphImage[];
+};
+
+type GraphAlbum = { id: string; type: string };
+
+type Paged<T> = { data: T[]; paging?: { cursors?: { after?: string } } };
+
+/**
+ * Ask Facebook for something, and treat every failure the same way: as
+ * nothing. A page that has lost its photographs should still be a page.
+ *
+ * The token is the system user's unless one is handed in — the reels
+ * endpoint wants a Page's own, see `pageToken`.
+ */
+async function graph<T>(
+  path: string,
+  query: Record<string, string>,
+  revalidate: number,
+  token: string | undefined = process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
+): Promise<T | null> {
+  if (!token) return null;
+
+  const url = new URL(`${GRAPH}/${path}`);
+  for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
+
+  try {
+    const response = await fetch(url, {
+      // The token travels in the header, never in the query string, so it
+      // stays out of logs and out of anything that records a URL.
+      headers: { Authorization: `Bearer ${token}` },
+      next: { revalidate },
+    });
+    if (!response.ok) return null;
+
+    const body = await response.json();
+    return "error" in body ? null : (body as T);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The album a Page's own posts put their pictures in. Facebook calls it the
+ * "wall" album; it is the one with everything in it. Asking the Page for
+ * `/photos` directly returns the photographs the Page was *tagged* in, which
+ * is a different and much smaller set, so we go to the album by name.
+ */
+async function wallAlbumId(pageId: string, revalidate: number): Promise<string | null> {
+  const albums = await graph<{ data: GraphAlbum[] }>(
+    `${pageId}/albums`,
+    { fields: "id,type", limit: "50" },
+    revalidate,
+  );
+  return albums?.data.find((album) => album.type === "wall")?.id ?? null;
+}
+
+/* ------------------------------------------------------------------
+   Days and weeks, in Toronto
+
+   Everything here compares calendar days as "YYYY-MM-DD" strings rather than
+   as instants. Toronto changes its clocks twice a year, and a string of the
+   day it was in Toronto is not something an hour's shift can move.
+   ------------------------------------------------------------------ */
+
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** The day it was in Toronto when this happened, as "YYYY-MM-DD". */
+function torontoDay(when: Date): string {
+  return dayFormatter.format(when);
+}
+
+/** The same day as a UTC noon instant — far enough from either edge that no
+ *  clock change can push the arithmetic onto the day before or after. */
+function noonUTC(day: string): number {
+  const [year, month, date] = day.split("-").map(Number);
+  return Date.UTC(year, month - 1, date, 12);
+}
+
+function toDay(instant: number): string {
+  const d = new Date(instant);
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const date = String(d.getUTCDate()).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${month}-${date}`;
+}
+
+/** The Sunday on or before the given day. */
+function weekStart(day: string): string {
+  const noon = noonUTC(day);
+  const sinceSunday = new Date(noon).getUTCDay(); // 0 is Sunday
+  return toDay(noon - sinceSunday * 86_400_000);
+}
+
+const clockFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+/** How far into the day it is in Toronto, in seconds. */
+function torontoSecondsIntoDay(when: Date): number {
+  const [hours, minutes, seconds] = clockFormatter.format(when).split(":").map(Number);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+/**
+ * How long the photographs may be held before asking Facebook again.
+ *
+ * A day at most, and less than that in the hours after a Sunday evening —
+ * because what is wanted is not a fetch *at* seven on Sunday, but that nothing
+ * fetched *before* seven still be on the page after it.
+ *
+ * So the answer is the time that has passed *since* the last Sunday at seven,
+ * capped at a day. Held up against the age of what is cached, that says
+ * exactly the right thing: anything stored before that hour is older than the
+ * hour is, and goes; anything stored after it is younger, and stays. By the
+ * Wednesday the cap has taken over and it is a plain daily refresh again.
+ *
+ * Counting the other way — time *until* the next Sunday at seven — reads just
+ * as naturally and is precisely wrong. It shortens as the hour approaches, so
+ * it refetches at a minute to seven, while the week's pictures are still being
+ * posted, and then hands out a fresh day-long hold at the very moment they
+ * arrive.
+ *
+ * A day is counted here as twenty-four hours, which it is not on the two days
+ * a year Toronto moves its clocks; the hour of slack that costs is recovered
+ * on the next build.
+ */
+function photosRevalidate(now: Date = new Date()): number {
+  const today = torontoDay(now);
+  const weekday = new Date(noonUTC(today)).getUTCDay(); // 0 is Sunday
+
+  let sinceSundayEvening =
+    weekday * 86_400 + torontoSecondsIntoDay(now) - SUNDAY_EVENING_HOUR * 3600;
+
+  // Sunday, but not yet seven: the last one was a week ago.
+  if (sinceSundayEvening < 0) sinceSundayEvening += 7 * 86_400;
+
+  // A floor, so that seven o'clock itself does not refetch on every visit.
+  return Math.max(60, Math.min(PHOTOS_REVALIDATE_CAP, Math.round(sinceSundayEvening)));
+}
+
+/* ------------------------------------------------------------------
+   Turning Facebook's photographs into the row's
+   ------------------------------------------------------------------ */
+
+/** The largest copy that is still worth sending down the wire. */
+function bestImage(images: GraphImage[]): GraphImage | null {
+  if (images.length === 0) return null;
+  const withinReason = images.filter((image) => image.width <= MAX_USEFUL_WIDTH);
+  const candidates = withinReason.length > 0 ? withinReason : images;
+  return candidates.reduce((widest, image) => (image.width > widest.width ? image : widest));
+}
+
+function formatDate(day: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(noonUTC(day)));
+}
+
+/** One photograph, or null where Facebook sent no usable image. */
+function toPhoto(photo: GraphPhoto): Photo | null {
+  const image = bestImage(photo.images ?? []);
+  if (!image) return null;
+
+  const date = formatDate(torontoDay(new Date(photo.created_time)));
+  // Facebook's own caption, where there is one. Its first line is the part
+  // written for a reader; the rest is usually hashtags.
+  const caption = photo.name?.split("\n")[0]?.trim() || null;
+
+  return {
+    id: photo.id,
+    src: image.source,
+    // Where a caption exists it is the only description of the picture that
+    // anyone has written, so it is what a screen reader is given.
+    alt: caption ?? `Photograph from the life of the church, ${date}`,
+    title: caption ?? date,
+    caption: caption ? date : undefined,
+  };
+}
+
+/**
+ * Lay the rhythm over a row. The shape of each picture only gets a veto, so
+ * that a portrait is never stretched across two tiles.
+ */
+function withRhythm(photos: Photo[], shapes: Map<string, GraphImage>): Photo[] {
+  return photos.map((photo, index) => {
+    const image = shapes.get(photo.id);
+    const landscape = image ? image.width > image.height : false;
+    return { ...photo, wide: WIDE_RHYTHM[index % WIDE_RHYTHM.length] && landscape };
+  });
+}
+
+/* ------------------------------------------------------------------
+   The row
+   ------------------------------------------------------------------ */
+
+/**
+ * Walk the album newest-first until we have gone past the day we care about,
+ * or until the page cap stops us.
+ */
+async function photosSince(
+  albumId: string,
+  earliestDay: string,
+  revalidate: number,
+): Promise<GraphPhoto[]> {
+  const collected: GraphPhoto[] = [];
+  let after: string | undefined;
+
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const query: Record<string, string> = {
+      fields: "id,name,created_time,images",
+      limit: String(PAGE_SIZE),
+    };
+    if (after) query.after = after;
+
+    const response = await graph<Paged<GraphPhoto>>(`${albumId}/photos`, query, revalidate);
+    const batch = response?.data ?? [];
+    if (batch.length === 0) break;
+
+    collected.push(...batch);
+
+    // The album is newest-first, so once a page ends before the week begins
+    // there is nothing older worth asking for.
+    const oldest = batch[batch.length - 1];
+    if (torontoDay(new Date(oldest.created_time)) < earliestDay) break;
+
+    after = response?.paging?.cursors?.after;
+    if (!after) break;
+  }
+
+  return collected;
+}
+
+/**
+ * This week's photographs, newest first. The week turns on a Sunday, so the
+ * most recent Sunday service heads the row rather than trailing the week
+ * before.
+ *
+ * Returns an empty list if Facebook cannot be reached or is not configured, or
+ * if the week has been a quiet one — which it is, briefly, every Sunday
+ * morning before the first pictures are posted. The caller falls back to the
+ * photographs kept in the repository.
+ */
+export async function getFacebookPhotos(): Promise<Photo[]> {
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  if (!pageId) return [];
+
+  const revalidate = photosRevalidate();
+  const albumId = await wallAlbumId(pageId, revalidate);
+  if (!albumId) return [];
+
+  const weekBegan = weekStart(torontoDay(new Date()));
+  const raw = await photosSince(albumId, weekBegan, revalidate);
+
+  // Keep each picture's shape to hand, so the rhythm can decline to widen a
+  // portrait without having to carry the dimensions through Photo itself.
+  const shapes = new Map<string, GraphImage>();
+  for (const photo of raw) {
+    const image = bestImage(photo.images ?? []);
+    if (image) shapes.set(photo.id, image);
+  }
+
+  const photos: Photo[] = [];
+  for (const rawPhoto of raw) {
+    if (photos.length >= MAX_PHOTOS) break;
+    if (torontoDay(new Date(rawPhoto.created_time)) < weekBegan) continue;
+
+    const photo = toPhoto(rawPhoto);
+    if (photo) photos.push(photo);
+  }
+
+  return withRhythm(photos, shapes);
+}
+
+/* ------------------------------------------------------------------
+   The reels
+
+   Short vertical videos, posted to the Page as reels. Facebook hands over
+   a direct MP4 for each — served with byte ranges and open CORS, so a plain
+   <video> can play it — along with a poster, a caption and a link back.
+   The MP4 links are signed like the photographs' and die on the same
+   schedule, so they too are fetched afresh each hour and never kept.
+   ------------------------------------------------------------------ */
+
+/**
+ * How many reels the page shows, ever. Five, and then Facebook. Each one is
+ * a dozen megabytes, so this is a limit on what a visitor is asked to carry
+ * as much as on what the page shows.
+ */
+const REELS_TO_SHOW = 5;
+
+type GraphReel = {
+  id: string;
+  description?: string;
+  source?: string;
+  picture?: string;
+  created_time: string;
+  length?: number;
+};
+
+/** One short video, ready for the page. */
+export type Reel = {
+  id: string;
+  /** A direct MP4, good for a few days. */
+  src: string;
+  /** A still from it, to show before it plays. */
+  poster: string;
+  /** Facebook's own caption. Reels, unlike the photographs, nearly always have one. */
+  caption: string | null;
+  /** The day it was posted, written out — "3 September 2026". */
+  date: string;
+  seconds: number;
+};
+
+/**
+ * The Page's own access token, derived from the system user's.
+ *
+ * Nearly everything answers to the system-user token. The reels edge is the
+ * exception: it refuses a user-type token outright ("a Page access token is
+ * required for this call for the new Pages experience"). A Page token can be
+ * asked for with the token we have, so we ask, and the hourly cache keeps
+ * that to one request an hour rather than one a visit. It is a second
+ * secret, but a derived one — nothing new for anyone to keep safe.
+ */
+async function pageToken(pageId: string): Promise<string | null> {
+  const page = await graph<{ access_token?: string }>(
+    pageId,
+    { fields: "access_token" },
+    REELS_REVALIDATE,
+  );
+  return page?.access_token ?? null;
+}
+
+function toReel(reel: GraphReel): Reel | null {
+  if (!reel.source || !reel.picture) return null;
+
+  return {
+    id: reel.id,
+    src: reel.source,
+    poster: reel.picture,
+    caption: reel.description?.trim() || null,
+    date: formatDate(torontoDay(new Date(reel.created_time))),
+    seconds: reel.length ?? 0,
+  };
+}
+
+/**
+ * The five most recent reels, newest first. An empty list when Facebook
+ * cannot be reached or is not configured; the section is simply not drawn.
+ */
+export async function getFacebookReels(): Promise<Reel[]> {
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  if (!pageId) return [];
+
+  const token = await pageToken(pageId);
+  if (!token) return [];
+
+  const reels = await graph<{ data: GraphReel[] }>(
+    `${pageId}/video_reels`,
+    {
+      fields: "id,description,source,picture,created_time,length",
+      limit: String(REELS_TO_SHOW),
+    },
+    REELS_REVALIDATE,
+    token,
+  );
+
+  return (reels?.data ?? [])
+    .map(toReel)
+    .filter((reel): reel is Reel => reel !== null)
+    .slice(0, REELS_TO_SHOW);
+}

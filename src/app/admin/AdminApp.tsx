@@ -7,7 +7,6 @@ import {
   AnnouncementsEditor,
   EventsEditor,
   GroupsEditor,
-  PhotosEditor,
   ServiceTimesEditor,
   VideosEditor,
   type EditorProps,
@@ -38,8 +37,13 @@ type Change = {
   canApprove: boolean;
 };
 
+/**
+ * The photo gallery is not among these. It reads the church's Facebook album
+ * by itself now, so there is nothing left to upload by hand; the photographs
+ * still in the content file are only the fallback for when Facebook cannot be
+ * reached, and are left alone rather than edited here.
+ */
 const SECTIONS: { key: string; label: string; blurb: string }[] = [
-  { key: "photos", label: "Photo gallery", blurb: "The photographs on the Media page" },
   { key: "announcements", label: "Announcements", blurb: "The flyers on the Events page" },
   { key: "events", label: "Upcoming events", blurb: "The dated list on the Events page" },
   { key: "services", label: "Service times", blurb: "The weekly rhythm" },
@@ -232,7 +236,6 @@ export default function AdminApp() {
                   </button>
                   {openSection === section.key && (
                     <div className="border-t border-neutral-100 px-5 py-5">
-                      {section.key === "photos" && <PhotosEditor {...editorProps} />}
                       {section.key === "announcements" && <AnnouncementsEditor {...editorProps} />}
                       {section.key === "events" && <EventsEditor {...editorProps} />}
                       {section.key === "services" && <ServiceTimesEditor {...editorProps} />}

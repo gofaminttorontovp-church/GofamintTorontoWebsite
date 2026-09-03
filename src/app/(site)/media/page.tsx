@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import YoutubeGallery from "@/components/YoutubeGallery";
 import PhotoGallery from "@/components/PhotoGallery";
+import ReelsGallery from "@/components/ReelsGallery";
 
 export const metadata: Metadata = {
   title: "Media",
@@ -12,6 +13,7 @@ export default function MediaPage() {
   return (
     <>
       <PhotoGallery />
+      <ReelsGallery />
       <YoutubeGallery />
     </>
   );

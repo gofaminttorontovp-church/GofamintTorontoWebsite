@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -36,12 +36,22 @@ export type Photo = {
 /** Past this many pixels a pointer is dragging the row, not picking a tile. */
 const DRAG_SLOP = 6;
 
+/** The round buttons over the photograph: close, and one either way. */
+const VIEWER_BUTTON =
+  "shrink-0 cursor-pointer rounded-full border border-white/20 bg-white/10 p-2 text-white " +
+  "backdrop-blur-sm transition-colors duration-200 hover:bg-white/25 " +
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+
 export default function BentoGallery({ photos }: { photos: readonly Photo[] }) {
-  const [selected, setSelected] = useState<Photo | null>(null);
+  // Which photograph is open is held as its place in the row, not as the
+  // photograph itself, because the arrow keys move along the row from here.
+  const [index, setIndex] = useState<number | null>(null);
   const rowRef = useRef<HTMLUListElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const openerRef = useRef<HTMLButtonElement | null>(null);
   const reduceMotion = useReducedMotion();
+
+  const selected = index === null ? null : (photos[index] ?? null);
+  const isOpen = selected !== null;
 
   /* ---- drag the row with a mouse, on top of its own scrolling ---- */
   const drag = useRef({ down: false, startX: 0, startLeft: 0, moved: false });
@@ -71,38 +81,69 @@ export default function BentoGallery({ photos }: { photos: readonly Photo[] }) {
   };
 
   /* ---- the picture, over the page ---- */
-  const open = (photo: Photo, event: React.MouseEvent<HTMLButtonElement>) => {
+  const open = (at: number) => {
     // A click that ended a drag is not a click on this photograph.
     if (drag.current.moved) {
       drag.current.moved = false;
       return;
     }
-    openerRef.current = event.currentTarget;
-    setSelected(photo);
+    setIndex(at);
   };
 
-  const close = useCallback(() => {
-    setSelected(null);
-    openerRef.current?.focus();
+  /** The keyboard goes back to the tile the reader left on, which after a few
+   *  arrow presses is not the tile they started from. */
+  const focusTile = useCallback((at: number) => {
+    rowRef.current?.querySelector<HTMLButtonElement>(`[data-tile="${at}"]`)?.focus();
   }, []);
 
-  useEffect(() => {
-    if (!selected) return;
+  const close = useCallback(() => {
+    const leaving = index;
+    setIndex(null);
+    if (leaving !== null) requestAnimationFrame(() => focusTile(leaving));
+  }, [index, focusTile]);
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("keydown", onKeyDown);
+  /** One along the row, round the end and back to the start. */
+  const step = useCallback(
+    (by: number) => {
+      setIndex((at) => (at === null ? at : (at + by + photos.length) % photos.length));
+    },
+    [photos.length],
+  );
+
+  // Hold the page still underneath, and put the keyboard into the viewer.
+  //
+  // This watches whether the viewer is open, never which photograph is in it.
+  // Were it to run again on each arrow press, the second run would save the
+  // hidden overflow it had itself just set, and closing would restore that —
+  // leaving the page unable to scroll.
+  useEffect(() => {
+    if (!isOpen) return;
 
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
 
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = overflow;
     };
-  }, [selected, close]);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+      else if (event.key === "ArrowRight") step(1);
+      else if (event.key === "ArrowLeft") step(-1);
+      else return;
+      // Only once one of ours matched, so the row keeps its own arrow keys
+      // when the viewer is shut.
+      event.preventDefault();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, close, step]);
 
   return (
     <>
@@ -116,11 +157,12 @@ export default function BentoGallery({ photos }: { photos: readonly Photo[] }) {
                    gap-4 overflow-x-auto scroll-pl-6 px-6 pb-2 select-none
                    md:-mx-8 md:scroll-pl-8 md:px-8"
       >
-        {photos.map((photo) => (
+        {photos.map((photo, at) => (
           <li key={photo.id} className={cn("h-60 md:h-72", photo.wide && "md:col-span-2")}>
             <button
               type="button"
-              onClick={(event) => open(photo, event)}
+              data-tile={at}
+              onClick={() => open(at)}
               aria-haspopup="dialog"
               className="group relative block h-full w-full cursor-pointer overflow-hidden rounded-xl
                          ring-1 ring-[color:var(--hairline)] focus-visible:outline-2 focus-visible:outline-offset-4"
@@ -183,8 +225,7 @@ export default function BentoGallery({ photos }: { photos: readonly Photo[] }) {
                 type="button"
                 onClick={close}
                 aria-label="Close photo"
-                className="shrink-0 cursor-pointer rounded-full border border-white/20 bg-white/10 p-2 text-white
-                           backdrop-blur-sm transition-colors duration-200 hover:bg-white/25"
+                className={VIEWER_BUTTON}
               >
                 <X size={20} />
               </button>
@@ -197,10 +238,39 @@ export default function BentoGallery({ photos }: { photos: readonly Photo[] }) {
                 alt={selected.alt}
                 className="max-h-[80vh] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
               />
-              <p className="m-0 w-full text-left text-[14px] text-white/75">
-                <span className="text-white">{selected.title}</span>
-                {selected.caption ? ` — ${selected.caption}` : null}
-              </p>
+              <div className="flex w-full items-center justify-between gap-4">
+                <p className="m-0 text-left text-[14px] text-white/75">
+                  <span className="text-white">{selected.title}</span>
+                  {selected.caption ? ` — ${selected.caption}` : null}
+                </p>
+
+                {/* The arrow keys do this too, but they are no use to a thumb,
+                    and nothing on screen would otherwise say the rest of the
+                    row is reachable from here. */}
+                {photos.length > 1 ? (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span aria-live="polite" className="text-[13px] tabular-nums text-white/60">
+                      {(index ?? 0) + 1} of {photos.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => step(-1)}
+                      aria-label="Previous photo"
+                      className={VIEWER_BUTTON}
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => step(1)}
+                      aria-label="Next photo"
+                      className={VIEWER_BUTTON}
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </motion.div>
           </motion.div>
         ) : null}
