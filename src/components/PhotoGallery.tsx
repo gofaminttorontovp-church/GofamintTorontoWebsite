@@ -1,6 +1,6 @@
 import BentoGallery from "@/components/ui/bento-gallery";
 import { eyebrow, h2, PHOTOS, FACEBOOK_PHOTOS } from "@/lib/site";
-import { getFacebookPhotoRows } from "@/lib/facebook";
+import { getFacebookPhotos } from "@/lib/facebook";
 
 /**
  * The photographs, under the videos on the Media page.
@@ -9,17 +9,17 @@ import { getFacebookPhotoRows } from "@/lib/facebook";
  * container the heading keeps to: a row that is dragged should look like it
  * carries on past the edge, because it does.
  *
- * The pictures come from the church's Facebook album, refreshed every hour, in
- * two rows: this week and last week. A week turns on a Sunday, so the most
- * recent Sunday service heads "this week" rather than trailing the week
- * before. A quiet week is left out rather than shown empty.
+ * The pictures are this week's, from the church's Facebook album. A week turns
+ * on a Sunday, so the most recent Sunday service heads the row rather than
+ * trailing the week before.
  *
- * When Facebook cannot be reached — or on a machine that has no token for it —
- * this falls back to the photographs kept in the repository, as one unlabelled
- * row, so the page is never empty and never broken.
+ * When Facebook cannot be reached — or on a machine that has no token for it,
+ * or on a Sunday morning before the week's first pictures are posted — this
+ * falls back to the photographs kept in the repository. Those are not this
+ * week's and are not labelled as though they were.
  */
 export default async function PhotoGallery() {
-  const rows = await getFacebookPhotoRows();
+  const live = await getFacebookPhotos();
 
   return (
     <section
@@ -49,16 +49,12 @@ export default async function PhotoGallery() {
           </a>
         </header>
 
-        {rows.length > 0 ? (
-          <div className="flex flex-col gap-10 md:gap-12">
-            {rows.map((row) => (
-              <section key={row.key} className="flex flex-col gap-4">
-                <h3 style={eyebrow} className="m-0">
-                  {row.label}
-                </h3>
-                <BentoGallery photos={row.photos} />
-              </section>
-            ))}
+        {live.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            <h3 style={eyebrow} className="m-0">
+              This week
+            </h3>
+            <BentoGallery photos={live} />
           </div>
         ) : (
           <BentoGallery photos={PHOTOS} />

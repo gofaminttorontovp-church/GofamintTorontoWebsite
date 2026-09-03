@@ -62,7 +62,7 @@ const MAX_PAGES = 4;
  * a row wants to carry and more than the page wants to load; the rest are a
  * click away on Facebook.
  */
-const MAX_PER_ROW = 24;
+const MAX_PHOTOS = 24;
 
 /** Beyond this width a picture is only heavier, never sharper on this page. */
 const MAX_USEFUL_WIDTH = 2048;
@@ -98,9 +98,6 @@ type GraphPhoto = {
 type GraphAlbum = { id: string; type: string };
 
 type Paged<T> = { data: T[]; paging?: { cursors?: { after?: string } } };
-
-/** A labelled row of photographs on the Media page. */
-export type PhotoRow = { key: string; label: string; photos: Photo[] };
 
 /**
  * Ask Facebook for something, and treat every failure the same way: as
@@ -190,11 +187,6 @@ function weekStart(day: string): string {
   const noon = noonUTC(day);
   const sinceSunday = new Date(noon).getUTCDay(); // 0 is Sunday
   return toDay(noon - sinceSunday * 86_400_000);
-}
-
-/** The day before the given day. */
-function dayBefore(day: string): string {
-  return toDay(noonUTC(day) - 86_400_000);
 }
 
 const clockFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -303,7 +295,7 @@ function withRhythm(photos: Photo[], shapes: Map<string, GraphImage>): Photo[] {
 }
 
 /* ------------------------------------------------------------------
-   The rows
+   The row
    ------------------------------------------------------------------ */
 
 /**
@@ -331,8 +323,8 @@ async function photosSince(
 
     collected.push(...batch);
 
-    // The album is newest-first, so once a page ends before the fortnight
-    // begins there is nothing older worth asking for.
+    // The album is newest-first, so once a page ends before the week begins
+    // there is nothing older worth asking for.
     const oldest = batch[batch.length - 1];
     if (torontoDay(new Date(oldest.created_time)) < earliestDay) break;
 
@@ -344,15 +336,16 @@ async function photosSince(
 }
 
 /**
- * This week's photographs and last week's, newest first, as two rows. Weeks
- * turn on a Sunday, so the most recent Sunday service is at the head of "this
- * week" rather than the tail of the week before.
+ * This week's photographs, newest first. The week turns on a Sunday, so the
+ * most recent Sunday service heads the row rather than trailing the week
+ * before.
  *
  * Returns an empty list if Facebook cannot be reached or is not configured, or
- * if the fortnight was a quiet one; the caller falls back to the photographs
- * kept in the repository.
+ * if the week has been a quiet one — which it is, briefly, every Sunday
+ * morning before the first pictures are posted. The caller falls back to the
+ * photographs kept in the repository.
  */
-export async function getFacebookPhotoRows(): Promise<PhotoRow[]> {
+export async function getFacebookPhotos(): Promise<Photo[]> {
   const pageId = process.env.FACEBOOK_PAGE_ID;
   if (!pageId) return [];
 
@@ -360,10 +353,8 @@ export async function getFacebookPhotoRows(): Promise<PhotoRow[]> {
   const albumId = await wallAlbumId(pageId, revalidate);
   if (!albumId) return [];
 
-  const thisWeekStart = weekStart(torontoDay(new Date()));
-  const lastWeekStart = weekStart(dayBefore(thisWeekStart));
-
-  const raw = await photosSince(albumId, lastWeekStart, revalidate);
+  const weekBegan = weekStart(torontoDay(new Date()));
+  const raw = await photosSince(albumId, weekBegan, revalidate);
 
   // Keep each picture's shape to hand, so the rhythm can decline to widen a
   // portrait without having to carry the dimensions through Photo itself.
@@ -373,24 +364,16 @@ export async function getFacebookPhotoRows(): Promise<PhotoRow[]> {
     if (image) shapes.set(photo.id, image);
   }
 
-  const rows: PhotoRow[] = [
-    { key: "this-week", label: "This week", photos: [] },
-    { key: "last-week", label: "Last week", photos: [] },
-  ];
+  const photos: Photo[] = [];
+  for (const rawPhoto of raw) {
+    if (photos.length >= MAX_PHOTOS) break;
+    if (torontoDay(new Date(rawPhoto.created_time)) < weekBegan) continue;
 
-  for (const raw_photo of raw) {
-    const day = torontoDay(new Date(raw_photo.created_time));
-    const row =
-      day >= thisWeekStart ? rows[0] : day >= lastWeekStart ? rows[1] : null;
-    if (!row || row.photos.length >= MAX_PER_ROW) continue;
-
-    const photo = toPhoto(raw_photo);
-    if (photo) row.photos.push(photo);
+    const photo = toPhoto(rawPhoto);
+    if (photo) photos.push(photo);
   }
 
-  return rows
-    .filter((row) => row.photos.length > 0)
-    .map((row) => ({ ...row, photos: withRhythm(row.photos, shapes) }));
+  return withRhythm(photos, shapes);
 }
 
 /* ------------------------------------------------------------------
