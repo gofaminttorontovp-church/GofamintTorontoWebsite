@@ -4,275 +4,78 @@ import { useEffect, useRef, useState } from "react";
 import HeroBackdrop from "@/components/HeroBackdrop";
 import { HERO_TREATMENTS } from "@/lib/site";
 import { useHeroTreatment } from "@/lib/use-hero-treatment";
+import { TYPE_RUN_MS, wordFrame } from "@/lib/hero-typing";
 
 /**
- * The hero: the choir singing behind the welcome.
+ * The hero: the choir singing behind the welcome, and one word written out.
  *
- * Act 1 — a brand-red line sweeps in above the headline, curves down beneath
- * it, then retracts into the word "Toronto", written letter-by-letter in red
- * under the static "Welcome to Gofamint" headline.
+ * There was a longer performance here once. A brand-red line swept in above
+ * the headline, curved down beneath it and retracted into "Toronto" as that
+ * word was written letter by letter; the sentence underneath then rose into
+ * place and "The Word" typed itself out at the end of it. The line is gone,
+ * and "Toronto"'s writing went with it — that writing was the second half of
+ * the line's own gesture, so a caret spelling the city out with no line to
+ * retract would have been the tail of a movement whose head had been cut off.
+ * The sentence no longer rises either. It is simply there.
  *
- * The close — the sentence underneath fades up and "The Word" types itself out
- * in white at the end of it. The page then stays where it is; moving it is the
- * visitor's to do.
+ * What is left is the last beat of it: "The Word" still writes itself, on its
+ * own, a moment after the curtain lifts.
  *
- * There was a dove here. Ninety-two frames of line art flew a hand-drawn
- * spline for eleven and a half seconds, banking through the turns, and it is
- * gone: the background it was drawn over was a still photograph of the
- * skyline, and the movement had to come from somewhere. It comes from the
- * choir now. The frames are still in /public/dove-flight, unreferenced, if
- * that decision is ever revisited.
+ * The choir moves too. That is the backdrop, not the text.
  *
- * Both acts run on a clock rather than the scrollbar, so the hero is one
- * screen tall and the page scrolls normally from the first flick. The clock
- * starts when `start` turns true — the loading screen decides that — and not
- * before the hero is actually in front of somebody.
+ * There was a dove here before any of it: ninety-two frames of line art flying
+ * a hand-drawn spline. The frames are still in /public/dove-flight,
+ * unreferenced, if that decision is ever revisited.
  */
-
-// Act 1's phase boundaries are expressed in the scroll units the hero used to
-// be scrubbed by, and `act1Units` maps elapsed milliseconds onto them, so the
-// phase maths below reads as it did when a scrollbar supplied the number.
-const ACT1_DRAW_MS = 1600; // the line sweeps in and dives    (units  0 → 45)
-const ACT1_GAP_MS = 200; //   a beat before the word          (units 45 → 50)
-const ACT1_TYPE_MS = 1350; // "Toronto" is written            (units 50 → 90)
-const ACT1_MS = ACT1_DRAW_MS + ACT1_GAP_MS + ACT1_TYPE_MS;
-
-/** Elapsed milliseconds of Act 1 → the scroll unit the phase maths wants. */
-const act1Units = (ms: number) => {
-  if (ms < ACT1_DRAW_MS) {
-    // eased out, so the line arrives at the word rather than stopping at it
-    const k = ms / ACT1_DRAW_MS;
-    return 45 * (1 - (1 - k) * (1 - k));
-  }
-  if (ms < ACT1_DRAW_MS + ACT1_GAP_MS) return 45 + 5 * ((ms - ACT1_DRAW_MS) / ACT1_GAP_MS);
-  // the typing runs linear — letters should land at an even pace
-  return 50 + 40 * Math.min(1, (ms - ACT1_DRAW_MS - ACT1_GAP_MS) / ACT1_TYPE_MS);
-};
-
-// The close runs 0 → 1 on its own clock behind Act 1: the sentence fades up
-// over the first stretch of it, then "The Word" types out.
-const CLOSE_MS = 2200;
-const CLOSE_TYPE_FROM = 0.45;
-const CLOSE_TYPE_TO = 0.8;
-
-// On the wide layout the line is drawn starting part-way along the curve — the
-// stretch before that carried the old white lead-in and is never inked. The
-// mobile line below was drawn to be inked end to end, so it skips nothing.
-const LINE_LEAD_IN = 0.25; // fraction of the curve skipped before the line starts
-
-/** Below the site's md breakpoint the hero uses the hand-drawn mobile line. */
-const MOBILE_MAX_W = 768;
-
-/**
- * The mobile line, drawn by hand on a phone and kept as fractions of the hero
- * so it holds its shape at any size.
- *
- * The wide-screen line curves down and then hooks back up into "Toronto",
- * which reads as tucking under the word on a laptop and as a wobble on a
- * phone. This one sweeps out to the left edge instead and comes back in level
- * with the word. There is no eighth point: the line has to finish where
- * "Toronto" actually sits, and that is measured at runtime.
- */
-const LINE_MOBILE_NORM: [number, number][] = [
-  [0.621, 0.298],
-  [0.533, 0.347],
-  [0.429, 0.391],
-  [0.325, 0.433],
-  [0.209, 0.471],
-  [0.11, 0.515],
-  [0.164, 0.565],
-];
-
-/** Catmull-Rom through the points, emitted as cubics. */
-const splinePath = (pts: [number, number][]) => {
-  const n = (v: number) => v.toFixed(1);
-  if (pts.length < 2) return "M 0 0";
-  let d = "M " + n(pts[0][0]) + " " + n(pts[0][1]);
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] || pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] || p2;
-    d +=
-      " C " + n(p1[0] + (p2[0] - p0[0]) / 6) + " " + n(p1[1] + (p2[1] - p0[1]) / 6) +
-      " " + n(p2[0] - (p3[0] - p1[0]) / 6) + " " + n(p2[1] - (p3[1] - p1[1]) / 6) +
-      " " + n(p2[0]) + " " + n(p2[1]);
-  }
-  return d;
-};
-
-type PathState = {
-  pathLine: string;
-  lineLen: number;
-  /** Fraction of the curve left blank before the ink starts. */
-  lead: number;
-  ready: boolean;
-};
-
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-
-/** 0 before `a`, 1 after `b`, smoothstep-eased in between. */
-const fade = (v: number, a: number, b: number) => {
-  const t = clamp01((v - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
 
 export default function Hero({ start = true }: { start?: boolean }) {
   const heroRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const trowRef = useRef<HTMLDivElement>(null);
-
   const treatment = useHeroTreatment();
-  // True from the moment the performance starts until it settles. While it is
-  // up, the geometry underneath it is left alone — see measure().
-  const playingRef = useRef(false);
-  const [s1, setS1] = useState(0); // Act 1 clock, in the old scroll units
-  const [close, setClose] = useState(0); // the closing clock, 0 → 1
-  const [paths, setPaths] = useState<PathState>({
-    pathLine: "M 0 0",
-    lineLen: 1,
-    lead: LINE_LEAD_IN,
-    ready: false,
-  });
+  const { ink, base } = HERO_TREATMENTS[treatment];
 
-  // ---- where the line is drawn, measured off the laid-out headline ----
-  useEffect(() => {
-    const stage = stageRef.current;
-    const trow = trowRef.current;
+  // Elapsed milliseconds, or null for "not writing" — see wordFrame.
+  const [ms, setMs] = useState<number | null>(null);
 
-    let cur = "";
-
-    const measure = () => {
-      if (!stage || !trow) return;
-      // Not while the performance is running: the line is mid-draw against
-      // these numbers, and a phone fires a resize on its own the moment its
-      // URL bar slides away.
-      if (playingRef.current) return;
-      const s = stage.getBoundingClientRect();
-      const t = trow.getBoundingClientRect();
-      const W = s.width;
-      const H = s.height;
-      if (W < 10 || H < 10) return;
-      // end of the line: just left of where "Toronto" starts, at its midline
-      const ex = t.left - s.left + 14;
-      const ey = t.top - s.top + t.height * 0.58;
-      const n = (v: number) => v.toFixed(1);
-
-      // Two lines, because one shape cannot serve both. On the wide layout it
-      // enters from the upper right and curves down and left into "Toronto";
-      // on a phone it takes the drawn route out to the left and back in.
-      const mobile = W < MOBILE_MAX_W;
-      const startX = 0.67 * W + 0.007 * Math.min(W, H);
-      const startY = 0.13 * H + 0.147 * Math.min(W, H);
-      const pathLine = mobile
-        ? splinePath([...LINE_MOBILE_NORM.map(([mx, my]) => [mx * W, my * H] as [number, number]), [ex, ey]])
-        : "M " + n(startX) + " " + n(startY) +
-          " C " + n(startX - 0.02 * W) + " " + n(startY + 0.1 * H) + " " + n(0.3 * W) + " " + n(0.42 * H) + " " + n(0.3 * W) + " " + n(0.5 * H) +
-          " C " + n(0.3 * W) + " " + n(0.58 * H) + " " + n(ex - 0.08 * W) + " " + n(ey + 0.04 * H) + " " + n(ex) + " " + n(ey);
-      const lead = mobile ? 0 : LINE_LEAD_IN;
-
-      if (pathLine === cur) return;
-      cur = pathLine;
-
-      let lineLen = 0;
-      try {
-        const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        probe.setAttribute("d", pathLine);
-        lineLen = probe.getTotalLength();
-      } catch {
-        lineLen = 0;
-      }
-      setPaths((prev) => ({ ...prev, pathLine, lineLen: lineLen || 1, lead }));
-    };
-
-    const onResize = () => measure();
-    window.addEventListener("resize", onResize);
-
-    // Two passes, because the line is drawn to where "Toronto" actually sits:
-    // once the layout has settled, and again once the display font has swapped
-    // in and the word has taken its real width.
-    const t = setTimeout(() => {
-      measure();
-      setPaths((prev) => ({ ...prev, ready: true }));
-    }, 60);
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(measure);
-    }
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-      clearTimeout(t);
-    };
-  }, []);
-
-  // ---- the performance: Act 1 on its own clock, the close behind it ----
   useEffect(() => {
     const hero = heroRef.current;
-    // Nothing starts before the geometry exists. The line is drawn to where
-    // "Toronto" actually sits, and starting ahead of the first measure gives
-    // the performance a blank stage to open on.
-    if (!hero || !start || !paths.ready) return;
+    if (!hero || !start) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const fl = { raf: 0 };
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // Straight to the final tableau — the whole story, none of the movement.
-      setS1(90);
-      setClose(1);
-      return;
-    }
-
-    // Both clocks accumulate clamped deltas rather than measuring against an
-    // absolute start, so a hidden tab pauses the performance instead of
-    // skipping through it.
-    const run = (durationMs: number, onTick: (k: number) => void, onEnd: () => void) => {
+    const play = () => {
       let elapsed = 0;
       let last = 0;
+      // Clamped deltas rather than a fixed start time, so a hidden tab pauses
+      // the writing instead of skipping through it.
       const step = (now: number) => {
         if (last) elapsed += Math.min(now - last, 100);
         last = now;
-        const k = Math.min(1, elapsed / durationMs);
-        onTick(k);
-        if (k < 1) fl.raf = requestAnimationFrame(step);
-        else onEnd();
+        if (elapsed < TYPE_RUN_MS) {
+          setMs(elapsed);
+          fl.raf = requestAnimationFrame(step);
+        } else {
+          setMs(null); // done: the plain, whole word again
+        }
       };
+      setMs(0);
       fl.raf = requestAnimationFrame(step);
     };
 
-    const begin = () => {
-      playingRef.current = true;
-      run(
-        ACT1_MS,
-        (k) => setS1(act1Units(k * ACT1_MS)),
-        () => {
-          setS1(90);
-          run(CLOSE_MS, setClose, () => {
-            // Done performing: the page may resize the hero again, and the
-            // final tableau should follow it. The page itself stays where it
-            // is — the visitor moves it.
-            playingRef.current = false;
-          });
-        },
-      );
-    };
-
-    // Play it to somebody. A reload restores the scroll position the closing
-    // glide left behind, which can put the visitor below a hero they have not
-    // watched yet — and the performance would spend itself off-screen, leaving
-    // them whatever was still running when they scrolled back up. It waits
-    // until the hero is actually in front of them, which is the one good habit
-    // the old scroll-driven version had for free.
+    // Write it to somebody. A reload restores the scroll position, which can
+    // put a visitor below a hero they have not seen; without this the word
+    // would write itself off-screen and simply be there by the time they
+    // scrolled back up to it.
     let io: IntersectionObserver | null = null;
     if (typeof IntersectionObserver === "undefined") {
-      begin();
+      play();
     } else {
       io = new IntersectionObserver(
         (entries) => {
           if (!entries.some((e) => e.isIntersecting)) return;
           io?.disconnect();
           io = null;
-          begin();
+          play();
         },
         { threshold: 0.5 },
       );
@@ -282,104 +85,64 @@ export default function Hero({ start = true }: { start?: boolean }) {
     return () => {
       io?.disconnect();
       cancelAnimationFrame(fl.raf);
-      playingRef.current = false;
     };
-  }, [start, paths.ready]);
+  }, [start]);
 
-  // ---- derived render values ----
-  const { pathLine, lineLen, lead: leadFrac, ready } = paths;
-
-  // Two clocks, one story: Act 1's runs first, the close picks up behind it.
-  const S = s1;
-  const C = close;
-
-  // Act 1 — phase A (0 → 45): line draws in, then dives under the headline.
-  //         phase B (50 → 90): line retracts as "Toronto" is written.
-  const pA = clamp01(S / 45);
-  const pB = clamp01((S - 50) / 40);
-
-  // The head lays ink down through phase A, then the tail is consumed into
-  // the word through phase B — both measured from the line's own start, so
-  // the skipped lead-in stays blank throughout.
-  const lead = leadFrac * lineLen;
-  const headL = pA * (lineLen - lead);
-  const tailL = pB * headL;
-  const bigL = (lineLen * 2 + 10).toFixed(1);
-  const dashLine = headL <= tailL ? "0 " + bigL : "0 " + (lead + tailL).toFixed(1) + " " + (headL - tailL).toFixed(1) + " " + bigL;
-
-  // The red caret holds after typing, then dissolves as the close begins.
-  let caretOpacity = 0;
-  if (S > 50) caretOpacity = pB < 1 ? 1 : 1 - clamp01(C / 0.12);
-
-  const clip = "inset(0 " + ((1 - pB) * 100).toFixed(2) + "% 0 0)";
-  const caretLeft = (pB * 100).toFixed(2) + "%";
-
-  // The hint fades in behind the opening line and then stays. It used to step
-  // aside as the close landed, because the page was about to carry the visitor
-  // down by itself; nothing does that now, so it is the only thing telling
-  // them there is more underneath.
-  const hintOpacity = fade(S, 6, 30);
-
-  // The closing sentence rises into place, then "The Word" types out at the
-  // end of it in white.
-  const line1Opacity = fade(C, 0.02, 0.4);
-  const line1Rise = (1 - line1Opacity) * 20;
-  const pT = clamp01((C - CLOSE_TYPE_FROM) / (CLOSE_TYPE_TO - CLOSE_TYPE_FROM));
-  const clipW = "inset(0 " + ((1 - pT) * 100).toFixed(2) + "% 0 0)";
-  const caretWLeft = (pT * 100).toFixed(2) + "%";
-  let caretWOpacity = 0;
-  if (C > CLOSE_TYPE_FROM - 0.05) caretWOpacity = pT < 1 ? 1 : 1 - clamp01((C - CLOSE_TYPE_TO) / 0.12);
-
-  const { ink, base } = HERO_TREATMENTS[treatment];
+  const { clip, caretLeft, caretOpacity } = wordFrame(ms);
 
   return (
     <div ref={heroRef} id="top" style={{ height: "100vh", position: "relative", background: "#7EC8EF" }}>
-      <div ref={stageRef} style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         <HeroBackdrop treatment={treatment} />
 
         {/* the choir settles into the deep indigo at the base */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "34%", background: `linear-gradient(to bottom, rgba(${base}, 0) 0%, rgba(${base}, 0.22) 62%, rgb(${base}) 100%)`, pointerEvents: "none" }} />
 
-        {/* the red line: enters above the headline and dives under it */}
-        {ready && (
-          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none", overflow: "visible" }}>
-            <path d={pathLine} style={{ fill: "none", stroke: "#d52821", strokeWidth: "3px", strokeLinecap: "butt", strokeLinejoin: "round", strokeDasharray: dashLine }} />
-          </svg>
-        )}
-
         {/* centered title lockup */}
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
           <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "clamp(44px, 7vw, 92px)", fontWeight: 600, letterSpacing: "0", lineHeight: 1.1, color: ink, textAlign: "center", padding: "0 16px" }}>Welcome to Gofamint</h1>
-          <div ref={trowRef} style={{ position: "relative", marginTop: 4, padding: "0 16px" }}>
-            {/* invisible sizing copy keeps the layout stable */}
-            <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(44px, 7vw, 92px)", fontWeight: 700, letterSpacing: "0", lineHeight: 1.15, visibility: "hidden" }}>Toronto</div>
-            {ready && (
-              <>
-                <div style={{ position: "absolute", inset: 0, padding: "0 16px", fontFamily: "var(--font-display)", fontSize: "clamp(44px, 7vw, 92px)", fontWeight: 700, letterSpacing: "0", lineHeight: 1.15, color: "#d52821", clipPath: clip }}>Toronto</div>
-                <div style={{ position: "absolute", top: "8%", bottom: "8%", left: caretLeft, width: 4, borderRadius: 2, background: "#d52821", transform: "translateX(-50%)", opacity: caretOpacity }} />
-              </>
-            )}
-          </div>
+          <div style={{ marginTop: 4, padding: "0 16px", fontFamily: "var(--font-display)", fontSize: "clamp(44px, 7vw, 92px)", fontWeight: 700, letterSpacing: "0", lineHeight: 1.15, color: "#d52821", textAlign: "center" }}>Toronto</div>
         </div>
 
-        {/* closing lockup — the sentence rises, then "The Word" types out.
-            Always rendered (opacity-driven) so the layout never shifts. */}
-        <div style={{ position: "absolute", left: 0, right: 0, top: "66%", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "baseline", columnGap: "0.4em", rowGap: 6, zIndex: 2, textAlign: "center", padding: "0 16px", pointerEvents: "none", fontFamily: "var(--font-display)", fontSize: "clamp(29px, 4.2vw, 58px)", letterSpacing: "0", lineHeight: 1.15 }}>
-          <span style={{ fontWeight: 600, color: ink, opacity: line1Opacity, transform: `translateY(${line1Rise.toFixed(1)}px)` }}>We Teach, Preach and Live</span>
-          <span style={{ position: "relative", fontWeight: 700 }}>
-            {/* invisible sizing copy keeps the layout stable */}
-            <span style={{ visibility: "hidden" }}>The Word</span>
-            {ready && (
-              <>
-                <span style={{ position: "absolute", inset: 0, color: "#ffffff", clipPath: clipW }}>The Word</span>
-                <span style={{ position: "absolute", top: "8%", bottom: "8%", left: caretWLeft, width: 4, borderRadius: 2, background: "#ffffff", transform: "translateX(-50%)", opacity: caretWOpacity }} />
-              </>
-            )}
+        {/* the closing sentence.
+
+            The sentence is laid out inline and its parts are joined by
+            ordinary spaces, which matters because "The Word" is written under
+            a moving clip and so has to be a positioned box rather than plain
+            text. The last time it was, the box was a flex item and the space
+            beside it was a 0.4em gap on the row — which was never a word space
+            (about two of them, and a different amount of wrong per family, a
+            gap scaling with the font size rather than with the font), and
+            which, being a layout property rather than a character, left the
+            sentence reading "and LiveThe Word" to a screen reader and to
+            anyone who copied it. An inline-block is a positioning root without
+            leaving the text, so the space beside it stays a space.
+
+            Where it breaks is decided by tying words together rather than by
+            forcing a break at a width. "Live The Word" is one nowrap unit, so
+            the sentence can only come apart before "Live" — never between
+            "Live" and the phrase it governs, and never inside "The Word",
+            which is an inline-block and so atomic anyway. A phone gets
+            "Where We Teach, Preach, and / Live The Word"; anything wide
+            enough gets the whole line. Nothing is hard-coded to a breakpoint,
+            so a width nobody tested cannot strand a word on a line by
+            itself. */}
+        <div style={{ position: "absolute", left: 0, right: 0, top: "66%", zIndex: 2, textAlign: "center", padding: "0 16px", pointerEvents: "none", fontFamily: "var(--font-display)", fontSize: "clamp(29px, 4.2vw, 58px)", letterSpacing: "0", lineHeight: 1.15 }}>
+          <span style={{ fontWeight: 600, color: ink }}>Where We Teach, Preach, and</span>{" "}
+          <span style={{ whiteSpace: "nowrap" }}>
+            <span style={{ fontWeight: 600, color: ink }}>Live</span>{" "}
+            <span style={{ display: "inline-block", position: "relative", fontWeight: 700 }}>
+              {/* invisible sizing copy keeps the layout stable */}
+              <span style={{ visibility: "hidden" }}>The Word</span>
+              <span style={{ position: "absolute", inset: 0, color: "#ffffff", clipPath: clip }}>The Word</span>
+              <span style={{ position: "absolute", top: "8%", bottom: "8%", left: caretLeft, width: 4, borderRadius: 2, background: "#ffffff", transform: "translateX(-50%)", opacity: caretOpacity }} />
+            </span>
           </span>
         </div>
 
-        {/* scroll hint */}
-        <div style={{ position: "absolute", bottom: 28, left: 0, right: 0, textAlign: "center", fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255, 255, 255, 0.85)", opacity: hintOpacity, zIndex: 3 }}>Keep scrolling</div>
+        {/* scroll hint — nothing carries the visitor down, so this is the only
+            thing telling them there is more underneath. */}
+        <div style={{ position: "absolute", bottom: 28, left: 0, right: 0, textAlign: "center", fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255, 255, 255, 0.85)", zIndex: 3 }}>Keep scrolling</div>
       </div>
     </div>
   );
