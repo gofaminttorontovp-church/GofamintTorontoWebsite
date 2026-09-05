@@ -24,11 +24,11 @@ import {
  * actually landed — with a cap, so a bad connection makes the visitor wait a
  * moment, never forever, and then it dissolves.
  *
- * `onDone` fires as the number reaches 100. It used to be what cued the hero
- * to begin its performance, and the hero would already be moving underneath a
- * curtain still dissolving; the hero is static now and nobody passes it, so it
- * is optional. It is kept because "the curtain is up" is a real moment, and
- * the next thing that wants to know about it should not have to re-derive it.
+ * `onDone` fires as the number reaches 100, which is what cues the hero to
+ * write "The Word" out — the one piece of the old performance still standing,
+ * and the reason this callback still has a caller. It is optional all the
+ * same: "the curtain is up" is a real moment whether or not anyone is
+ * listening for it.
  */
 
 const FLOOR_MS = 1200; // 0 → 95, on the clock alone
