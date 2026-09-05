@@ -15,15 +15,20 @@ import {
  * It exists for two reasons at once. The first is the feel: the counter runs
  * the moment the document paints, so the site answers instantly instead of
  * showing an empty frame while the choir arrives. The second is the hero: the
- * performance behind this screen measures the width of the word "Toronto" to
- * lay its line down, and it wants the display font in hand before it does.
+ * hero is set in the display font, and a curtain that lifts before that font
+ * lands reveals the welcome in the fallback and then swaps it under the
+ * visitor's eyes.
  *
  * So the count is floored, not faked. It runs 0 → 95 on its own clock, then
  * holds there until the backdrop's first frame and the display font have
  * actually landed — with a cap, so a bad connection makes the visitor wait a
- * moment, never forever. `onDone` fires as the number reaches 100, which is
- * what cues the hero to begin, and the screen dissolves off the top of the
- * animation already playing underneath it.
+ * moment, never forever, and then it dissolves.
+ *
+ * `onDone` fires as the number reaches 100. It used to be what cued the hero
+ * to begin its performance, and the hero would already be moving underneath a
+ * curtain still dissolving; the hero is static now and nobody passes it, so it
+ * is optional. It is kept because "the curtain is up" is a real moment, and
+ * the next thing that wants to know about it should not have to re-derive it.
  */
 
 const FLOOR_MS = 1200; // 0 → 95, on the clock alone
@@ -75,7 +80,7 @@ function awaitHeroBackdrop() {
   });
 }
 
-export default function LoadingScreen({ onDone }: { onDone: () => void }) {
+export default function LoadingScreen({ onDone }: { onDone?: () => void }) {
   // Decided once, before the first paint, so the screen never flashes for a
   // visitor who is not going to be shown it.
   //
@@ -106,7 +111,7 @@ export default function LoadingScreen({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     if (!show) {
-      onDone();
+      onDone?.();
       setGone(true); // it was only ever display:none; take it out of the tree
       return;
     }
@@ -163,7 +168,7 @@ export default function LoadingScreen({ onDone }: { onDone: () => void }) {
       window.removeEventListener("scroll", onScroll);
       restoreScrollRestoration();
       setFinished(true);
-      onDone(); // the hero starts while the curtain is still dissolving
+      onDone?.();
       fadeTimer = window.setTimeout(() => {
         if (!cancelled) setGone(true);
       }, FADE_MS + 40);

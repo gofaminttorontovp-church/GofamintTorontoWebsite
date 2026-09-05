@@ -1,30 +1,21 @@
-"use client";
-
-import { useCallback, useState } from "react";
 import Hero from "@/components/Hero";
 import LoadingScreen from "@/components/LoadingScreen";
 
 /**
- * The opening of the home page: the loading screen, and the hero it lifts off.
+ * The opening of the home page: the loading screen, and the hero behind it.
  *
- * The two are paired here rather than in the page so the page can stay a
- * server component. The screen counts 0 → 100 while the hero's photograph and
- * the first dove frames land, and hands over on the way out — the hero's first
- * red stroke is already moving as the curtain dissolves, which is the whole
- * point: nothing about the site should look like it is waiting on itself.
- *
- * When the screen decides not to show at all — a visitor arriving at
- * /#mission, or coming back home from Events — it calls back immediately and
- * the hero simply begins.
+ * The screen used to hand over to the hero — it counted 0 → 100 while the
+ * backdrop and the display font landed, then called back so the hero's first
+ * red stroke was already moving as the curtain dissolved. The hero does not
+ * perform any more, so there is nothing to hand over to and no state to hold
+ * here; the screen simply waits for the same things and then gets out of the
+ * way, revealing a hero that was finished before it was covered.
  */
 export default function HomeIntro() {
-  const [started, setStarted] = useState(false);
-  const begin = useCallback(() => setStarted(true), []);
-
   return (
     <>
-      <LoadingScreen onDone={begin} />
-      <Hero start={started} />
+      <LoadingScreen />
+      <Hero />
     </>
   );
 }
