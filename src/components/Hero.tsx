@@ -106,30 +106,37 @@ export default function Hero({ start = true }: { start?: boolean }) {
 
         {/* the closing sentence.
 
-            The sentence is laid out inline and the halves are joined by an
-            ordinary space, which matters because "The Word" is written under a
-            moving clip and so has to be a positioned box rather than plain
+            The sentence is laid out inline and its parts are joined by
+            ordinary spaces, which matters because "The Word" is written under
+            a moving clip and so has to be a positioned box rather than plain
             text. The last time it was, the box was a flex item and the space
-            between the halves was a 0.4em gap on the row — which was never a
-            word space (about two of them, and a different amount of wrong per
-            family, a gap scaling with the font size rather than with the
-            font), and which, being a layout property rather than a character,
-            left the sentence reading "and LiveThe Word" to a screen reader and
-            to anyone who copied it. An inline-block is a positioning root
-            without leaving the text, so the space beside it stays a space.
+            beside it was a 0.4em gap on the row — which was never a word space
+            (about two of them, and a different amount of wrong per family, a
+            gap scaling with the font size rather than with the font), and
+            which, being a layout property rather than a character, left the
+            sentence reading "and LiveThe Word" to a screen reader and to
+            anyone who copied it. An inline-block is a positioning root without
+            leaving the text, so the space beside it stays a space.
 
-            Being inline-block also makes "The Word" atomic: it wraps whole or
-            not at all, and can never come apart into "The" and "Word" across
-            two lines. Below md the break before it is forced, so it lands on a
-            line of its own rather than trailing the phrase. */}
+            Where it breaks is decided by tying words together rather than by
+            forcing a break at a width. "Live The Word" is one nowrap unit, so
+            the sentence can only come apart before "Live" — never between
+            "Live" and the phrase it governs, and never inside "The Word",
+            which is an inline-block and so atomic anyway. A phone gets
+            "Where We Teach, Preach, and / Live The Word"; anything wide
+            enough gets the whole line. Nothing is hard-coded to a breakpoint,
+            so a width nobody tested cannot strand a word on a line by
+            itself. */}
         <div style={{ position: "absolute", left: 0, right: 0, top: "66%", zIndex: 2, textAlign: "center", padding: "0 16px", pointerEvents: "none", fontFamily: "var(--font-display)", fontSize: "clamp(29px, 4.2vw, 58px)", letterSpacing: "0", lineHeight: 1.15 }}>
-          <span style={{ fontWeight: 600, color: ink }}>Where We Teach, Preach, and Live</span>
-          <br className="hero-sentence-break" />{" "}
-          <span style={{ display: "inline-block", position: "relative", fontWeight: 700 }}>
-            {/* invisible sizing copy keeps the layout stable */}
-            <span style={{ visibility: "hidden" }}>The Word</span>
-            <span style={{ position: "absolute", inset: 0, color: "#ffffff", clipPath: clip }}>The Word</span>
-            <span style={{ position: "absolute", top: "8%", bottom: "8%", left: caretLeft, width: 4, borderRadius: 2, background: "#ffffff", transform: "translateX(-50%)", opacity: caretOpacity }} />
+          <span style={{ fontWeight: 600, color: ink }}>Where We Teach, Preach, and</span>{" "}
+          <span style={{ whiteSpace: "nowrap" }}>
+            <span style={{ fontWeight: 600, color: ink }}>Live</span>{" "}
+            <span style={{ display: "inline-block", position: "relative", fontWeight: 700 }}>
+              {/* invisible sizing copy keeps the layout stable */}
+              <span style={{ visibility: "hidden" }}>The Word</span>
+              <span style={{ position: "absolute", inset: 0, color: "#ffffff", clipPath: clip }}>The Word</span>
+              <span style={{ position: "absolute", top: "8%", bottom: "8%", left: caretLeft, width: 4, borderRadius: 2, background: "#ffffff", transform: "translateX(-50%)", opacity: caretOpacity }} />
+            </span>
           </span>
         </div>
 

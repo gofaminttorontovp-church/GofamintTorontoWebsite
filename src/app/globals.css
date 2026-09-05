@@ -211,17 +211,6 @@
   box-sizing: border-box;
 }
 
-/* The hero's closing sentence breaks before "The Word" on a phone, so that
-   phrase lands on a line of its own instead of trailing the end of the one
-   above it. From md up the sentence fits across a single line and the break is
-   suppressed: a <br> with no box generates no break, which leaves the ordinary
-   space beside it to join the two halves, exactly as it does on one line. */
-@media (min-width: 768px) {
-  .hero-sentence-break {
-    display: none;
-  }
-}
-
 /* Rows that scroll sideways on a phone: the swipe is the affordance, and a
    scrollbar sitting under the content is only noise at that size. */
 .no-scrollbar {
