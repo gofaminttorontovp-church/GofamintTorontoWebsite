@@ -10,27 +10,28 @@ import type { Photo } from "@/components/ui/bento-gallery";
  * asserted, because nothing about the occasion is known.
  *
  * The image links Facebook returns are signed and die after about five days,
- * which is why they are never written to disk. They are fetched afresh every
- * hour and handed straight to the page.
+ * which is why they are never written to disk. They are fetched afresh on the
+ * cadence set below and handed straight to the page.
  */
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
 const HOUR = 60 * 60;
-const DAY = 24 * HOUR;
 
 /**
  * How often the reels are asked for again. They are posted and then wanted
- * quickly, and there are only ever five of them to fetch.
+ * quickly, and there are only ever five of them to fetch, so keeping this
+ * short costs almost nothing.
  */
-const REELS_REVALIDATE = 6 * HOUR;
+const REELS_REVALIDATE = HOUR;
 
 /**
  * The longest the photographs are held before asking again. They arrive in
- * their own time — a Sunday's pictures may not be posted for days — so there
- * is little won by asking more often than this.
+ * their own time — a Sunday's pictures may not be posted for days — but this
+ * is held level with `expireTime` in next.config.ts, so that a page rebuilt
+ * for freshness is never filled from photograph data older than the rebuild.
  */
-const PHOTOS_REVALIDATE_CAP = DAY;
+const PHOTOS_REVALIDATE_CAP = 12 * HOUR;
 
 /**
  * Except across a Sunday evening. The week's pictures are usually up by seven,
@@ -51,16 +52,16 @@ const SUNDAY_EVENING_HOUR = 19;
 const PAGE_SIZE = 100;
 
 /**
- * How far back to keep asking. Two weeks of a busy fortnight fits in one or
- * two pages; the cap is only here so that a quiet album — where the fortnight
- * we want is never reached — cannot walk the whole history.
+ * How many pages to ask for at most. One is nearly always enough for the two
+ * dozen the row shows; the cap is only here so that an album that answers a
+ * page thinly cannot walk the whole history.
  */
 const MAX_PAGES = 4;
 
 /**
- * One row's worth. A week can run to seventy photographs, which is more than
- * a row wants to carry and more than the page wants to load; the rest are a
- * click away on Facebook.
+ * One row's worth. A busy week can run to seventy photographs, which is more
+ * than a row wants to carry and more than the page wants to load; the rest are
+ * a click away on Facebook.
  */
 const MAX_PHOTOS = 24;
 
@@ -137,9 +138,30 @@ async function graph<T>(
  * The album a Page's own posts put their pictures in. Facebook calls it the
  * "wall" album; it is the one with everything in it. Asking the Page for
  * `/photos` directly returns the photographs the Page was *tagged* in, which
- * is a different and much smaller set, so we go to the album by name.
+ * is a different and much smaller set, so we go to the album.
+ *
+ * There are two ways round to it, and the pinned one is tried first.
+ *
+ * Pinning the album's id in the environment is not an optimisation, though it
+ * does save a request an hour. Facebook's `/albums` edge has been seen to stop
+ * listing the wall album at all while the album itself is perfectly healthy:
+ * eight calls in a row came back with five albums and no wall among them, and
+ * the album meanwhile answered to its own id with two and three quarter
+ * thousand photographs in it and one posted that afternoon. Nothing about the
+ * album had changed; the edge had simply stopped mentioning it. When that
+ * happens there is no album to find, the row comes back empty, and the page
+ * falls back to the pictures kept in the repository — which is precisely the
+ * failure a visitor notices, because those pictures are months old.
+ *
+ * An id, once written down, cannot be lost that way.
+ *
+ * Where nothing is pinned we still go looking, which is what a deployment does
+ * before anyone has written the id down, and what any other Page would do.
  */
 async function wallAlbumId(pageId: string, revalidate: number): Promise<string | null> {
+  const pinned = process.env.FACEBOOK_WALL_ALBUM_ID?.trim();
+  if (pinned) return pinned;
+
   const albums = await graph<{ data: GraphAlbum[] }>(
     `${pageId}/albums`,
     { fields: "id,type", limit: "50" },
@@ -173,20 +195,6 @@ function torontoDay(when: Date): string {
 function noonUTC(day: string): number {
   const [year, month, date] = day.split("-").map(Number);
   return Date.UTC(year, month - 1, date, 12);
-}
-
-function toDay(instant: number): string {
-  const d = new Date(instant);
-  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const date = String(d.getUTCDate()).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${month}-${date}`;
-}
-
-/** The Sunday on or before the given day. */
-function weekStart(day: string): string {
-  const noon = noonUTC(day);
-  const sinceSunday = new Date(noon).getUTCDay(); // 0 is Sunday
-  return toDay(noon - sinceSunday * 86_400_000);
 }
 
 const clockFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -299,14 +307,14 @@ function withRhythm(photos: Photo[], shapes: Map<string, GraphImage>): Photo[] {
    ------------------------------------------------------------------ */
 
 /**
- * Walk the album newest-first until we have gone past the day we care about,
- * or until the page cap stops us.
+ * Walk the album newest-first until we have more photographs than the row can
+ * show, or until the page cap stops us.
+ *
+ * One page is almost always enough: Facebook hands over a hundred at a time
+ * and the row shows two dozen. The loop is here for the album that answers a
+ * page thinly, not for the ordinary case.
  */
-async function photosSince(
-  albumId: string,
-  earliestDay: string,
-  revalidate: number,
-): Promise<GraphPhoto[]> {
+async function recentPhotos(albumId: string, revalidate: number): Promise<GraphPhoto[]> {
   const collected: GraphPhoto[] = [];
   let after: string | undefined;
 
@@ -322,11 +330,7 @@ async function photosSince(
     if (batch.length === 0) break;
 
     collected.push(...batch);
-
-    // The album is newest-first, so once a page ends before the week begins
-    // there is nothing older worth asking for.
-    const oldest = batch[batch.length - 1];
-    if (torontoDay(new Date(oldest.created_time)) < earliestDay) break;
+    if (collected.length >= MAX_PHOTOS) break;
 
     after = response?.paging?.cursors?.after;
     if (!after) break;
@@ -336,14 +340,22 @@ async function photosSince(
 }
 
 /**
- * This week's photographs, newest first. The week turns on a Sunday, so the
- * most recent Sunday service heads the row rather than trailing the week
- * before.
+ * The church's most recent photographs, newest first — two dozen of them, and
+ * then Facebook.
  *
- * Returns an empty list if Facebook cannot be reached or is not configured, or
- * if the week has been a quiet one — which it is, briefly, every Sunday
- * morning before the first pictures are posted. The caller falls back to the
- * photographs kept in the repository.
+ * No window is put on the age of a picture. An earlier version kept only the
+ * current week's, which emptied the row every Sunday at midnight and left it
+ * empty for days: the album is filled in its own time, so a Sunday's pictures
+ * are often not posted until the Tuesday or the Thursday after. What the
+ * visitor was handed in the meantime was the fallback set kept in the
+ * repository — older than everything the filter had just thrown away.
+ *
+ * So the row is simply the latest of what the church has posted. Every tile
+ * carries the day it was posted, so nothing here is passed off as newer than
+ * it is.
+ *
+ * Returns an empty list only if Facebook cannot be reached or is not
+ * configured; the caller falls back to the photographs kept in the repository.
  */
 export async function getFacebookPhotos(): Promise<Photo[]> {
   const pageId = process.env.FACEBOOK_PAGE_ID;
@@ -353,21 +365,25 @@ export async function getFacebookPhotos(): Promise<Photo[]> {
   const albumId = await wallAlbumId(pageId, revalidate);
   if (!albumId) return [];
 
-  const weekBegan = weekStart(torontoDay(new Date()));
-  const raw = await photosSince(albumId, weekBegan, revalidate);
+  const raw = await recentPhotos(albumId, revalidate);
+
+  // Facebook returns the album newest-first, but the row's claim to be the
+  // latest should not rest on that, and sorting a hundred rows costs nothing.
+  const newestFirst = [...raw].sort(
+    (a, b) => Date.parse(b.created_time) - Date.parse(a.created_time),
+  );
 
   // Keep each picture's shape to hand, so the rhythm can decline to widen a
   // portrait without having to carry the dimensions through Photo itself.
   const shapes = new Map<string, GraphImage>();
-  for (const photo of raw) {
+  for (const photo of newestFirst) {
     const image = bestImage(photo.images ?? []);
     if (image) shapes.set(photo.id, image);
   }
 
   const photos: Photo[] = [];
-  for (const rawPhoto of raw) {
+  for (const rawPhoto of newestFirst) {
     if (photos.length >= MAX_PHOTOS) break;
-    if (torontoDay(new Date(rawPhoto.created_time)) < weekBegan) continue;
 
     const photo = toPhoto(rawPhoto);
     if (photo) photos.push(photo);
@@ -382,6 +398,8 @@ export async function getFacebookPhotos(): Promise<Photo[]> {
    Short vertical videos, posted to the Page as reels. Facebook hands over
    a direct MP4 for each — served with byte ranges and open CORS, so a plain
    <video> can play it — along with a poster, a caption and a link back.
+   They are picked out of the Page's videos by hand, because the edge that
+   is supposed to list them leaves too many out.
    The MP4 links are signed like the photographs' and die on the same
    schedule, so they too are fetched afresh each hour and never kept.
    ------------------------------------------------------------------ */
@@ -393,14 +411,66 @@ export async function getFacebookPhotos(): Promise<Photo[]> {
  */
 const REELS_TO_SHOW = 5;
 
-type GraphReel = {
+/**
+ * How many videos to look through to find those five.
+ *
+ * The reels are not kept apart from anything else the Page posts, so a Sunday
+ * service sits in the list between them. Twenty-five is several weeks of
+ * posting, which is enough to find five reels through any ordinary dry spell.
+ */
+const VIDEOS_TO_SEARCH = 25;
+
+/**
+ * The longest a video may run and still be taken for a reel. Facebook's own
+ * limit is three minutes; a recorded service runs to two and a half hours. The
+ * gap between the two is so wide that nothing real sits in it.
+ */
+const LONGEST_REEL_SECONDS = 3 * 60;
+
+type GraphThumbnail = {
+  uri: string;
+  width: number;
+  height: number;
+  is_preferred?: boolean;
+};
+
+type GraphVideo = {
   id: string;
   description?: string;
   source?: string;
   picture?: string;
   created_time: string;
   length?: number;
+  thumbnails?: { data: GraphThumbnail[] };
 };
+
+/**
+ * Whether one of the Page's videos is a reel.
+ *
+ * Facebook will not say. It has an edge that claims to list the reels and
+ * cannot be trusted to — see `getFacebookReels` — so the question has to be
+ * answered from the video itself, and the two things that separate a reel from
+ * a recorded service are how long it runs and which way up it was shot.
+ *
+ * Both are checked, because either alone can be fooled: a service cut short
+ * would pass on length, and a service filmed on a phone held upright would
+ * pass on shape. Together they have been right on every video the Page has
+ * posted — the reels come back 1080 by 1920 and under a minute, the services
+ * 1280 by 720 and hours long.
+ *
+ * Where Facebook offers no thumbnail to measure, the length is allowed to
+ * decide alone. A short video that cannot be shaped is more likely a reel than
+ * two hours of anything.
+ */
+function isReel(video: GraphVideo): boolean {
+  if ((video.length ?? 0) > LONGEST_REEL_SECONDS) return false;
+
+  const thumbnails = video.thumbnails?.data ?? [];
+  const preferred = thumbnails.find((thumbnail) => thumbnail.is_preferred) ?? thumbnails[0];
+  if (!preferred) return true;
+
+  return preferred.height > preferred.width;
+}
 
 /** One short video, ready for the page. */
 export type Reel = {
@@ -435,7 +505,7 @@ async function pageToken(pageId: string): Promise<string | null> {
   return page?.access_token ?? null;
 }
 
-function toReel(reel: GraphReel): Reel | null {
+function toReel(reel: GraphVideo): Reel | null {
   if (!reel.source || !reel.picture) return null;
 
   return {
@@ -451,6 +521,20 @@ function toReel(reel: GraphReel): Reel | null {
 /**
  * The five most recent reels, newest first. An empty list when Facebook
  * cannot be reached or is not configured; the section is simply not drawn.
+ *
+ * These come from the Page's videos rather than from `/video_reels`, which is
+ * the edge that exists to answer exactly this question and does not answer it.
+ * Asked for the reels it returned fifty, the newest of them five days old,
+ * while the Page had posted four since — one of them that afternoon. It was
+ * not lagging behind the present either: reels from a fortnight earlier were
+ * missing from the middle of the list. The same fifty were all present and
+ * correct in `/videos`, which had every one of them and a hundred besides, so
+ * that is where we look. See `isReel` for telling them apart from the
+ * recordings of the services.
+ *
+ * `/videos` insists on a Page token. Handed the system user's it does not
+ * refuse — it returns an empty list and no error at all, which is the worst
+ * way for this to fail, so `pageToken` is not optional here.
  */
 export async function getFacebookReels(): Promise<Reel[]> {
   const pageId = process.env.FACEBOOK_PAGE_ID;
@@ -459,17 +543,21 @@ export async function getFacebookReels(): Promise<Reel[]> {
   const token = await pageToken(pageId);
   if (!token) return [];
 
-  const reels = await graph<{ data: GraphReel[] }>(
-    `${pageId}/video_reels`,
+  const videos = await graph<Paged<GraphVideo>>(
+    `${pageId}/videos`,
     {
-      fields: "id,description,source,picture,created_time,length",
-      limit: String(REELS_TO_SHOW),
+      fields:
+        "id,description,source,picture,created_time,length," +
+        "thumbnails{uri,width,height,is_preferred}",
+      limit: String(VIDEOS_TO_SEARCH),
     },
     REELS_REVALIDATE,
     token,
   );
 
-  return (reels?.data ?? [])
+  return (videos?.data ?? [])
+    .filter(isReel)
+    .sort((a, b) => Date.parse(b.created_time) - Date.parse(a.created_time))
     .map(toReel)
     .filter((reel): reel is Reel => reel !== null)
     .slice(0, REELS_TO_SHOW);

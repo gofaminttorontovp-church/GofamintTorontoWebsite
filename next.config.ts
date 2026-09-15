@@ -3,7 +3,7 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   /**
-   * The oldest page a visitor may be handed, in seconds: two days.
+   * The oldest page a visitor may be handed, in seconds: twelve hours.
    *
    * What the Media page shows are signed links that stop working after about
    * four and a half days, and a page only goes stale — it does not refresh
@@ -14,11 +14,12 @@ const nextConfig: NextConfig = {
    * in full with every picture broken.
    *
    * Past this age Next stops handing out the old copy and fetches before it
-   * answers. Two days here, on top of the day the photographs may already have
-   * been held for, puts the oldest link a visitor can be shown at three days —
-   * a day and a half inside the four and a half.
+   * answers. Twelve hours here, held level with the longest the photographs
+   * are kept in src/lib/facebook.ts, puts the oldest link a visitor can be
+   * shown at a day — comfortably inside the four and a half, and close enough
+   * to live that a reel posted in the morning is on the page by the evening.
    */
-  expireTime: 2 * 24 * 60 * 60,
+  expireTime: 12 * 60 * 60,
 
   // Pin the workspace root to this project. Without this, Next.js walks up and
   // finds a stray lockfile in the home directory and mis-infers the root.

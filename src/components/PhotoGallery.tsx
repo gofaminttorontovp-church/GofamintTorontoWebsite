@@ -9,14 +9,13 @@ import { getFacebookPhotos } from "@/lib/facebook";
  * container the heading keeps to: a row that is dragged should look like it
  * carries on past the edge, because it does.
  *
- * The pictures are this week's, from the church's Facebook album. A week turns
- * on a Sunday, so the most recent Sunday service heads the row rather than
- * trailing the week before.
+ * The pictures are the latest two dozen from the church's Facebook album,
+ * newest first. Every tile carries the day it was posted, so an album that has
+ * been quiet for a while says as much on its face.
  *
- * When Facebook cannot be reached — or on a machine that has no token for it,
- * or on a Sunday morning before the week's first pictures are posted — this
- * falls back to the photographs kept in the repository. Those are not this
- * week's and are not labelled as though they were.
+ * When Facebook cannot be reached — or on a machine that has no token for it —
+ * this falls back to the photographs kept in the repository. Those are not
+ * labelled as though they had come from Facebook.
  */
 export default async function PhotoGallery() {
   const live = await getFacebookPhotos();
@@ -52,7 +51,7 @@ export default async function PhotoGallery() {
         {live.length > 0 ? (
           <div className="flex flex-col gap-4">
             <h3 style={eyebrow} className="m-0">
-              This week
+              Latest photos
             </h3>
             <BentoGallery photos={live} />
           </div>
