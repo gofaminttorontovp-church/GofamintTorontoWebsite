@@ -398,6 +398,8 @@ export async function getFacebookPhotos(): Promise<Photo[]> {
    Short vertical videos, posted to the Page as reels. Facebook hands over
    a direct MP4 for each — served with byte ranges and open CORS, so a plain
    <video> can play it — along with a poster, a caption and a link back.
+   They are picked out of the Page's videos by hand, because the edge that
+   is supposed to list them leaves too many out.
    The MP4 links are signed like the photographs' and die on the same
    schedule, so they too are fetched afresh each hour and never kept.
    ------------------------------------------------------------------ */
@@ -409,14 +411,66 @@ export async function getFacebookPhotos(): Promise<Photo[]> {
  */
 const REELS_TO_SHOW = 5;
 
-type GraphReel = {
+/**
+ * How many videos to look through to find those five.
+ *
+ * The reels are not kept apart from anything else the Page posts, so a Sunday
+ * service sits in the list between them. Twenty-five is several weeks of
+ * posting, which is enough to find five reels through any ordinary dry spell.
+ */
+const VIDEOS_TO_SEARCH = 25;
+
+/**
+ * The longest a video may run and still be taken for a reel. Facebook's own
+ * limit is three minutes; a recorded service runs to two and a half hours. The
+ * gap between the two is so wide that nothing real sits in it.
+ */
+const LONGEST_REEL_SECONDS = 3 * 60;
+
+type GraphThumbnail = {
+  uri: string;
+  width: number;
+  height: number;
+  is_preferred?: boolean;
+};
+
+type GraphVideo = {
   id: string;
   description?: string;
   source?: string;
   picture?: string;
   created_time: string;
   length?: number;
+  thumbnails?: { data: GraphThumbnail[] };
 };
+
+/**
+ * Whether one of the Page's videos is a reel.
+ *
+ * Facebook will not say. It has an edge that claims to list the reels and
+ * cannot be trusted to — see `getFacebookReels` — so the question has to be
+ * answered from the video itself, and the two things that separate a reel from
+ * a recorded service are how long it runs and which way up it was shot.
+ *
+ * Both are checked, because either alone can be fooled: a service cut short
+ * would pass on length, and a service filmed on a phone held upright would
+ * pass on shape. Together they have been right on every video the Page has
+ * posted — the reels come back 1080 by 1920 and under a minute, the services
+ * 1280 by 720 and hours long.
+ *
+ * Where Facebook offers no thumbnail to measure, the length is allowed to
+ * decide alone. A short video that cannot be shaped is more likely a reel than
+ * two hours of anything.
+ */
+function isReel(video: GraphVideo): boolean {
+  if ((video.length ?? 0) > LONGEST_REEL_SECONDS) return false;
+
+  const thumbnails = video.thumbnails?.data ?? [];
+  const preferred = thumbnails.find((thumbnail) => thumbnail.is_preferred) ?? thumbnails[0];
+  if (!preferred) return true;
+
+  return preferred.height > preferred.width;
+}
 
 /** One short video, ready for the page. */
 export type Reel = {
@@ -451,7 +505,7 @@ async function pageToken(pageId: string): Promise<string | null> {
   return page?.access_token ?? null;
 }
 
-function toReel(reel: GraphReel): Reel | null {
+function toReel(reel: GraphVideo): Reel | null {
   if (!reel.source || !reel.picture) return null;
 
   return {
@@ -467,6 +521,20 @@ function toReel(reel: GraphReel): Reel | null {
 /**
  * The five most recent reels, newest first. An empty list when Facebook
  * cannot be reached or is not configured; the section is simply not drawn.
+ *
+ * These come from the Page's videos rather than from `/video_reels`, which is
+ * the edge that exists to answer exactly this question and does not answer it.
+ * Asked for the reels it returned fifty, the newest of them five days old,
+ * while the Page had posted four since — one of them that afternoon. It was
+ * not lagging behind the present either: reels from a fortnight earlier were
+ * missing from the middle of the list. The same fifty were all present and
+ * correct in `/videos`, which had every one of them and a hundred besides, so
+ * that is where we look. See `isReel` for telling them apart from the
+ * recordings of the services.
+ *
+ * `/videos` insists on a Page token. Handed the system user's it does not
+ * refuse — it returns an empty list and no error at all, which is the worst
+ * way for this to fail, so `pageToken` is not optional here.
  */
 export async function getFacebookReels(): Promise<Reel[]> {
   const pageId = process.env.FACEBOOK_PAGE_ID;
@@ -475,17 +543,21 @@ export async function getFacebookReels(): Promise<Reel[]> {
   const token = await pageToken(pageId);
   if (!token) return [];
 
-  const reels = await graph<{ data: GraphReel[] }>(
-    `${pageId}/video_reels`,
+  const videos = await graph<Paged<GraphVideo>>(
+    `${pageId}/videos`,
     {
-      fields: "id,description,source,picture,created_time,length",
-      limit: String(REELS_TO_SHOW),
+      fields:
+        "id,description,source,picture,created_time,length," +
+        "thumbnails{uri,width,height,is_preferred}",
+      limit: String(VIDEOS_TO_SEARCH),
     },
     REELS_REVALIDATE,
     token,
   );
 
-  return (reels?.data ?? [])
+  return (videos?.data ?? [])
+    .filter(isReel)
+    .sort((a, b) => Date.parse(b.created_time) - Date.parse(a.created_time))
     .map(toReel)
     .filter((reel): reel is Reel => reel !== null)
     .slice(0, REELS_TO_SHOW);
