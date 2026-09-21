@@ -10,15 +10,6 @@
       "detail": "The declaration over the month, given by Pastor (Dr.) Elijah O. Abina, General Overseer of The Gospel Faith Mission International."
     },
     {
-      "id": "mens",
-      "label": "Men's Conference",
-      "image": "/mens.jpg",
-      "width": 1079,
-      "height": 960,
-      "title": "The Mandate of a Kingdom Man",
-      "detail": "The 2nd Annual National Men's Conference, on Romans 12:11, with Pastor Sam Adusi and Pastor Adeyemi Sofolahan. Saturday, September 12, 2026 from 1:00pm to 4:00pm EST, on Zoom. Meeting ID 697 148 1978."
-    },
-    {
       "id": "year",
       "label": "Our Year of Good Success",
       "image": "/Year_2026.jpg",
@@ -26,6 +17,15 @@
       "height": 1241,
       "title": "Our Year of Good Success",
       "detail": "The anchor for the year: the Lord will perfect that which concerns me; your mercy, O Lord, endures forever; do not forsake the works of your hands."
+    },
+    {
+      "id": "announcement-nej6xo",
+      "label": "Incense of Worship",
+      "image": "/announcements/dod-flyer-7191uc.jpg",
+      "width": 768,
+      "height": 1024,
+      "title": "Incense of Worship",
+      "detail": "Join the Descendants of David in their annual concert held and Gofamint Toronto"
     }
   ],
   "serviceTimes": [
@@ -52,11 +52,6 @@
     }
   ],
   "upcomingEvents": [
-    {
-      "date": "Sep 12",
-      "title": "National Men's Conference",
-      "time": "1:00pm"
-    },
     {
       "date": "Nov 13",
       "title": "Night of worship",
