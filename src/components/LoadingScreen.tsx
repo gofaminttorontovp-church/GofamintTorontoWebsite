@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   CircularProgress,
   CircularProgressIndicator,
@@ -43,7 +43,7 @@ const FIELD = "rgb(40, 16, 104)";
 /**
  * Whether this document has already played the intro. Module scope, so it
  * survives a client-side navigation away and back (returning home from
- * Events does not sit the visitor through it a second time) and resets on a
+ * Media does not sit the visitor through it a second time) and resets on a
  * real page load, which is what "opening the site" means.
  */
 let playedThisDocument = false;
@@ -89,7 +89,7 @@ export default function LoadingScreen({ onDone }: { onDone?: () => void }) {
   // one. That difference is kept to a style attribute on an element that is
   // always there: returning null instead would change the shape of the tree
   // and fail hydration outright, which is exactly what it did.
-  const [show] = useState(() => {
+  const [show, setShow] = useState(() => {
     if (typeof window === "undefined") return true;
     // Arriving at a section — /#mission from another page — is the one case
     // that skips it: the visitor asked for a particular place, and a
@@ -109,8 +109,21 @@ export default function LoadingScreen({ onDone }: { onDone?: () => void }) {
   const [gone, setGone] = useState(false);
   const doneRef = useRef(false);
 
+  // The answer above is early by a moment for one visitor: the one whose
+  // first page was Media or Groups and who follows Events or Visit home from
+  // there. The router renders this before it writes the new URL, so the hash
+  // is not there to be read yet and the curtain was raised — and the reset to
+  // the top below then undid the jump the router had just made. By the time
+  // effects run the URL is written, so it is read again here, before the
+  // paint, and the curtain comes down without ever having been seen.
+  useLayoutEffect(() => {
+    if (window.location.hash) setShow(false);
+  }, []);
+
   useEffect(() => {
-    if (!show) {
+    // The hash is asked after again for the same reason: this can run once
+    // with the early answer before the correction above has rendered.
+    if (!show || window.location.hash) {
       onDone?.();
       setGone(true); // it was only ever display:none; take it out of the tree
       return;
