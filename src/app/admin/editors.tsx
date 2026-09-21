@@ -207,7 +207,7 @@ export function AnnouncementsEditor({ content, update, stageImage, imgSrc, onErr
   return (
     <div className="space-y-4">
       <p className="text-[14px] leading-relaxed text-neutral-500">
-        The flyers the Events page turns through. Each one carries a short name for its button, a
+        The flyers the home page turns through. Each one carries a short name for its button, a
         title, and a line or two underneath.
       </p>
       {content.announcements.map((item, index) => (
@@ -240,7 +240,7 @@ export function EventsEditor({ content, update }: EditorProps) {
   return (
     <div className="space-y-4">
       <p className="text-[14px] leading-relaxed text-neutral-500">
-        The list on the Events page — the things happening once, with a date. Weekly services live
+        The list under the announcements on the home page — the things happening once, with a date. Weekly services live
         under Service times instead.
       </p>
       {content.upcomingEvents.map((event, index) => (
