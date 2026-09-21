@@ -60,7 +60,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   }, [pathname]);
 
   /**
-   * Closing on tap, for the two header links that are hashes on the home page
+   * Closing on tap, for the header links that are hashes on the home page
    * rather than routes of their own.
    *
    * The route-change effect above cannot close the menu for those: /#mission

@@ -4,15 +4,15 @@ import { SITE_CONTENT } from "./content";
 /**
  * Primary navigation — the full set, listed in the footer.
  *
- * About and Visit are no longer pages. What they promised now lives on the
- * home page, so they point at the sections that say it: the mission
- * statements and the service times. A hash from another route sends the
+ * About, Visit and Events are no longer pages. What they promised now lives
+ * on the home page, so they point at the sections that say it: the mission
+ * statements, the service times, and the announcements with the dated list. A hash from another route sends the
  * visitor home and scrolls them there.
  */
 export const NAV_LINKS = [
   { href: "/#mission", label: "About" },
   { href: "/#connect", label: "Visit" },
-  { href: "/events", label: "Events" },
+  { href: "/#events", label: "Events" },
   { href: "/media", label: "Media" },
   { href: "/groups", label: "Groups" },
 ] as const;
@@ -20,7 +20,7 @@ export const NAV_LINKS = [
 /** The header carries three of those as plain links... */
 export const HEADER_LINKS = [
   { href: "/#connect", label: "Visit" },
-  { href: "/events", label: "Events" },
+  { href: "/#events", label: "Events" },
   { href: "/groups", label: "Groups" },
 ] as const;
 
@@ -181,7 +181,7 @@ export const SOCIALS = [
 ] as const;
 
 /**
- * Dated gatherings, newest first, for the list on the Events page.
+ * Dated gatherings, newest first, for the list under the announcements on the home page.
  *
  * Only what we have a flyer for. The weekly rhythm is in SERVICE_TIMES and is
  * not repeated here; this list is for the things that happen once. Add an

@@ -25,6 +25,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // Events was a page of its own once. Its two sections are on the home page
+  // now, and an old link or a search result should land on them.
+  async redirects() {
+    return [{ source: "/events", destination: "/#events", permanent: true }];
+  },
   images: {
     // The video gallery's posters are YouTube's own thumbnails, served from
     // these two hosts. The photo gallery's pictures come from the church's

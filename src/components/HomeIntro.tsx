@@ -15,7 +15,7 @@ import LoadingScreen from "@/components/LoadingScreen";
  * out a beat after the curtain lifts, and it should be doing that in front of
  * somebody rather than behind a screen still counting. So the state is here
  * again. When the screen decides not to show at all — a visitor arriving at
- * /#mission, or coming back home from Events — it calls back immediately.
+ * /#mission, or coming back home from Media — it calls back immediately.
  */
 export default function HomeIntro() {
   const [started, setStarted] = useState(false);

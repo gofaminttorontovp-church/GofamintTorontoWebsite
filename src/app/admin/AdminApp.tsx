@@ -44,8 +44,8 @@ type Change = {
  * reached, and are left alone rather than edited here.
  */
 const SECTIONS: { key: string; label: string; blurb: string }[] = [
-  { key: "announcements", label: "Announcements", blurb: "The flyers on the Events page" },
-  { key: "events", label: "Upcoming events", blurb: "The dated list on the Events page" },
+  { key: "announcements", label: "Announcements", blurb: "The flyers on the home page" },
+  { key: "events", label: "Upcoming events", blurb: "The dated list under the announcements" },
   { key: "services", label: "Service times", blurb: "The weekly rhythm" },
   { key: "groups", label: "Groups & leaders", blurb: "Photos and words on the Groups page" },
   { key: "videos", label: "Videos", blurb: "The YouTube gallery on the Media page" },

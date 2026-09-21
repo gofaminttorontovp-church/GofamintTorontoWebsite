@@ -22,7 +22,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - `src/app/layout.tsx` — root layout, Inter font (the open-source SF Pro substitute), metadata.
 - `src/app/globals.css` — design-system tokens (colors, type, spacing, radius, elevation) + button styles.
-- `src/app/page.tsx` — the home page: About, Visit, Sermons, Events, Footer.
+- `src/app/page.tsx` — the home page: hero, mission statements, announcements, upcoming events, service times, footer.
 - `src/components/Hero.tsx` — the scroll-driven animated hero (client component).
 - `src/components/Button.tsx` — the pill CTA button (primary / secondary).
 - `public/` — logo and photography.
