@@ -2,11 +2,11 @@
   "announcements": [
     {
       "id": "august",
-      "label": "October Declaration",
-      "image": "/announcements/825356464-1076490418614892-6097245872324-1ifdve.jpg",
-      "width": 1440,
-      "height": 1800,
-      "title": "October, Our Month of Divine Perfection",
+      "label": "November Declaration",
+      "image": "/announcements/872064384-28878240681857503-833140960905-j79llz.jpg",
+      "width": 1080,
+      "height": 1344,
+      "title": "November, Our Month of Thanksgiving",
       "detail": "The declaration over the month, given by Pastor (Dr.) Elijah O. Abina, General Overseer of The Gospel Faith Mission International."
     },
     {
@@ -17,15 +17,6 @@
       "height": 1241,
       "title": "Our Year of Good Success",
       "detail": "The anchor for the year: the Lord will perfect that which concerns me; your mercy, O Lord, endures forever; do not forsake the works of your hands."
-    },
-    {
-      "id": "announcement-zdz2ad",
-      "label": "Pentecost Weekend",
-      "image": "/announcements/pentecost-night-qe9tu8.jpg",
-      "width": 819,
-      "height": 1024,
-      "title": "Pentecost Weekend",
-      "detail": "Join us October 10th-11th for Pentecost Weekend with Pastor (Dr.) Kumni Akarakiri and Pastor Samuel Adusi"
     }
   ],
   "serviceTimes": [
@@ -54,7 +45,7 @@
   "upcomingEvents": [
     {
       "date": "Nov 13",
-      "title": "Night of worship",
+      "title": "Hours of Praise",
       "time": "7:00pm",
       "note": "Every Friday to December 25, in place of the Friday prayer meeting"
     }
